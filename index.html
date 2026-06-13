@@ -1,11 +1,887 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Creatorforge</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreatorForge — Your Personal YouTube AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06060f;
+  --s1:#0d0d1a;
+  --s2:#12121f;
+  --card:#16162a;
+  --border:#232340;
+  --p:#7c5cfc;
+  --p2:#c084fc;
+  --gold:#f4c430;
+  --cyan:#22d3ee;
+  --green:#22c55e;
+  --text:#f0f0fc;
+  --muted:#7a7a9a;
+  --light:#b0b0cc;
+}
+
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:999;
+  background:rgba(6,6,15,0.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-logo{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--p),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-badge{font-size:9px;background:var(--p);color:#fff;padding:2px 7px;border-radius:20px;font-weight:700;-webkit-text-fill-color:#fff;margin-left:6px}
+.nav-cta{background:linear-gradient(135deg,var(--p),#9b59fc);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:10px 18px;cursor:pointer;font-family:'Inter',sans-serif}
+
+/* HERO */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:120px 24px 80px;
+  position:relative;overflow:hidden;
+}
+.hero-glow{
+  position:absolute;top:20%;left:50%;transform:translateX(-50%);
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(124,92,252,0.15) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);
+  border-radius:20px;padding:6px 16px;
+  font-size:12px;font-weight:600;color:var(--p2);
+  margin-bottom:28px;letter-spacing:0.06em;text-transform:uppercase;
+}
+.hero h1{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(36px,8vw,72px);
+  font-weight:800;line-height:1.1;
+  margin-bottom:24px;
+  letter-spacing:-0.02em;
+}
+.hero h1 .line2{
+  background:linear-gradient(90deg,var(--p),var(--p2),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:clamp(15px,3vw,20px);color:var(--light);
+  max-width:560px;line-height:1.7;margin-bottom:40px;
+}
+.hero-pills{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
+  margin-bottom:40px;
+}
+.pill{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:7px 16px;
+  font-size:13px;color:var(--light);font-weight:500;
+  display:flex;align-items:center;gap:6px;
+}
+.hero-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-bottom:20px}
+.btn-primary{
+  background:linear-gradient(135deg,var(--p),#9b59fc);
+  border:none;border-radius:12px;color:#fff;
+  font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
+  padding:16px 32px;cursor:pointer;
+  box-shadow:0 0 40px rgba(124,92,252,0.4);
+  transition:transform 0.2s,box-shadow 0.2s;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(124,92,252,0.6)}
+.btn-ghost{
+  background:none;border:1px solid var(--border);border-radius:12px;
+  color:var(--light);font-size:15px;font-weight:500;padding:16px 28px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:border-color 0.2s;
+}
+.btn-ghost:hover{border-color:var(--p)}
+.hero-note{font-size:12px;color:var(--muted)}
+
+/* DEMO CARD */
+.demo-section{padding:0 24px 100px;display:flex;justify-content:center}
+.demo-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:24px;
+  padding:28px;max-width:700px;width:100%;
+  box-shadow:0 40px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(124,92,252,0.1);
+}
+.demo-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.demo-dot{width:10px;height:10px;border-radius:50%}
+.demo-input{
+  background:var(--bg);border:1px solid rgba(124,92,252,0.4);
+  border-radius:12px;padding:14px 18px;
+  color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
+  width:100%;margin-bottom:12px;
+}
+.demo-generating{
+  text-align:center;padding:16px;color:var(--muted);font-size:13px;
+}
+.demo-results{display:grid;gap:10px}
+.demo-row{
+  background:var(--card);border-radius:12px;padding:14px 16px;
+  display:flex;align-items:flex-start;gap:12px;
+}
+.demo-icon{font-size:18px;min-width:24px;margin-top:1px}
+.demo-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:4px}
+.demo-value{font-size:13px;color:var(--light);line-height:1.5}
+.demo-tag{display:inline-block;background:#1e1435;border:1px solid #3d2a6e;border-radius:12px;color:var(--p2);font-size:11px;padding:3px 9px;margin:2px}
+
+/* STATS */
+.stats{
+  padding:60px 24px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+}
+.stat{background:var(--s1);padding:32px 20px;text-align:center}
+.stat-num{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:800;background:linear-gradient(90deg,var(--p),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* FEATURES */
+.features{padding:100px 24px;max-width:1100px;margin:0 auto}
+.section-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--p);margin-bottom:12px;text-align:center}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,5vw,44px);font-weight:800;text-align:center;margin-bottom:16px;line-height:1.2}
+.section-sub{color:var(--muted);text-align:center;font-size:16px;margin-bottom:60px;max-width:500px;margin-left:auto;margin-right:auto}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.feature-card{
+  background:var(--card);border:1px solid var(--border);border-radius:20px;
+  padding:28px;transition:border-color 0.2s,transform 0.2s;
+}
+.feature-card:hover{border-color:var(--p);transform:translateY(-4px)}
+.feature-icon{
+  width:48px;height:48px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;margin-bottom:16px;
+}
+.fi-purple{background:rgba(124,92,252,0.15)}
+.fi-cyan{background:rgba(34,211,238,0.1)}
+.fi-gold{background:rgba(244,196,48,0.1)}
+.fi-green{background:rgba(34,197,94,0.1)}
+.fi-pink{background:rgba(236,72,153,0.1)}
+.fi-orange{background:rgba(249,115,22,0.1)}
+.feature-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px}
+.feature-desc{font-size:14px;color:var(--muted);line-height:1.7}
+
+/* HOW IT WORKS */
+.how{background:var(--s1);padding:100px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.steps{max-width:700px;margin:0 auto;display:grid;gap:28px}
+.step{display:flex;gap:20px;align-items:flex-start}
+.step-num{
+  min-width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,var(--p),#9b59fc);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;
+}
+.step-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:6px}
+.step-desc{font-size:14px;color:var(--muted);line-height:1.6}
+
+/* PRICING */
+.pricing{padding:100px 24px;max-width:1000px;margin:0 auto}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:50px}
+.plan{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:28px;position:relative;
+}
+.plan.popular{border-color:var(--p);background:linear-gradient(135deg,rgba(124,92,252,0.08),var(--card))}
+.popular-badge{
+  position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,var(--p),var(--p2));
+  border-radius:20px;padding:4px 16px;
+  font-size:11px;font-weight:700;white-space:nowrap;
+}
+.plan-name{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px}
+.plan-price{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:800;margin-bottom:4px}
+.plan-price span{font-size:16px;color:var(--muted);font-weight:400}
+.plan-period{font-size:12px;color:var(--muted);margin-bottom:24px}
+.plan-features{list-style:none;margin-bottom:28px}
+.plan-features li{font-size:14px;color:var(--light);padding:7px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.plan-features li:last-child{border:none}
+.check{color:var(--green);font-size:14px}
+.plan-btn{
+  width:100%;border-radius:10px;font-size:14px;font-weight:700;
+  padding:13px;cursor:pointer;font-family:'Inter',sans-serif;border:none;
+}
+.plan-btn.solid{background:linear-gradient(135deg,var(--p),#9b59fc);color:#fff}
+.plan-btn.outline{background:none;border:1px solid var(--border);color:var(--light)}
+
+/* TESTIMONIALS */
+.testimonials{background:var(--s1);padding:100px 24px;border-top:1px solid var(--border)}
+.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;max-width:900px;margin:50px auto 0}
+.testi-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px}
+.testi-stars{color:var(--gold);font-size:14px;margin-bottom:12px}
+.testi-text{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:16px;font-style:italic}
+.testi-author{display:flex;align-items:center;gap:10px}
+.testi-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
+.testi-name{font-size:13px;font-weight:600}
+.testi-role{font-size:11px;color:var(--muted)}
+
+/* CTA SECTION */
+.cta-section{
+  padding:100px 24px;text-align:center;
+  background:linear-gradient(135deg,rgba(124,92,252,0.08) 0%,var(--bg) 100%);
+  border-top:1px solid var(--border);
+}
+.cta-section h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,5vw,48px);font-weight:800;margin-bottom:16px;line-height:1.2}
+.cta-section p{color:var(--muted);font-size:16px;margin-bottom:36px}
+
+/* FOOTER */
+footer{
+  background:var(--s1);border-top:1px solid var(--border);
+  padding:40px 24px;text-align:center;
+}
+.footer-logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;background:linear-gradient(90deg,var(--p),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
+.footer-links a{color:var(--muted);font-size:13px;text-decoration:none}
+.footer-copy{font-size:12px;color:var(--muted)}
+
+/* ANIMATIONS */
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pulse-glow{0%,100%{opacity:0.4}50%{opacity:0.8}}
+.float{animation:float 4s ease-in-out infinite}
+
+/* MOBILE */
+@media(max-width:600px){
+  .stats{grid-template-columns:1fr 1fr 1fr}
+  .stat-num{font-size:24px}
+  nav .btn-ghost-nav{display:none}
+}
+</style>
 </head>
 <body>
-    <h1>Bem-vindo ao Creatorforge</h1>
-    <p>O sistema de IA está configurado!</p>
+
+<!-- NAV -->
+<nav>
+  <div style="display:flex;align-items:center">
+    <span class="nav-logo">CreatorForge</span>
+    <span style="font-size:18px;margin-left:4px">✦</span>
+    <span class="nav-badge">PRO</span>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Start Free →</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-eyebrow">✦ For YouTube Creators</div>
+  <h1>
+    Your Personal<br>
+    <span class="line2">YouTube AI Agent.</span>
+  </h1>
+  <p class="hero-sub">Type your topic. Your AI agent instantly builds your complete video content package — titles, script, SEO, hashtags, and thumbnail idea.</p>
+  <div class="hero-pills">
+    <div class="pill">🔥 Viral Titles</div>
+    <div class="pill">📝 Full Script</div>
+    <div class="pill">🔍 SEO Description</div>
+    <div class="pill"># Hashtags</div>
+    <div class="pill">🖼 Thumbnail Idea</div>
+    <div class="pill">⚡ Hook Variations</div>
+  </div>
+  <div class="hero-btns">
+    <button class="btn-primary" onclick="showFreeModal()">✨ Start for Free</button>
+    <button class="btn-ghost" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">See it in action ↓</button>
+  </div>
+  <p class="hero-note">No credit card required · 3 free generations · Cancel anytime</p>
+</section>
+
+<!-- DEMO -->
+<section class="demo-section" id="demo">
+  <div class="demo-card float">
+    <div class="demo-bar">
+      <div class="demo-dot" style="background:#ff5f57"></div>
+      <div class="demo-dot" style="background:#ffbd2e"></div>
+      <div class="demo-dot" style="background:#28c840"></div>
+      <span style="font-size:12px;color:var(--muted);margin-left:8px">CreatorForge — Live Preview</span>
+    </div>
+    <input class="demo-input" value="10 productivity habits that changed my life" readonly>
+    <div class="demo-results">
+      <div class="demo-row">
+        <div class="demo-icon">🔥</div>
+        <div>
+          <div class="demo-label">Top Viral Title</div>
+          <div class="demo-value" style="font-weight:600;color:var(--text)">"I Tried 10 Productivity Habits for 30 Days — Here's What Actually Worked"</div>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-icon">⚡</div>
+        <div>
+          <div class="demo-label">Opening Hook</div>
+          <div class="demo-value" style="font-style:italic;color:var(--light)">"What if just 2 of these habits could completely change how you work every single day?"</div>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-icon">#</div>
+        <div>
+          <div class="demo-label">Hashtags Generated</div>
+          <div>
+            <span class="demo-tag">#Productivity</span>
+            <span class="demo-tag">#Habits</span>
+            <span class="demo-tag">#Success</span>
+            <span class="demo-tag">#Mindset</span>
+            <span class="demo-tag">#SelfImprovement</span>
+            <span class="demo-tag">#YouTubeGrowth</span>
+          </div>
+        </div>
+      </div>
+      <div class="demo-row" style="border:1px solid rgba(124,92,252,0.3)">
+        <div class="demo-icon">🖼</div>
+        <div>
+          <div class="demo-label">Thumbnail Concept</div>
+          <div class="demo-value">Dark gradient bg · Creator looking focused · Bold text: <strong style="color:var(--gold)">"CHANGED MY LIFE"</strong> · Emotion: Curiosity & motivation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num">10s</div>
+    <div class="stat-label">Generation time</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">6x</div>
+    <div class="stat-label">More content assets</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">5h</div>
+    <div class="stat-label">Saved per video</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-eyebrow">Everything you need</div>
+  <h2 class="section-title">One topic.<br>A complete content package.</h2>
+  <p class="section-sub">Stop juggling 5 different tools. CreatorForge gives you everything in one click.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon fi-purple">🔥</div>
+      <div class="feature-title">5 Viral Titles</div>
+      <div class="feature-desc">AI-crafted titles optimized for clicks, curiosity, and YouTube SEO — ranked by viral potential.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-cyan">📝</div>
+      <div class="feature-title">Full Video Script</div>
+      <div class="feature-desc">Hook → Intro → 3-point Body → Outro. Fully structured and ready to record.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-gold">🔍</div>
+      <div class="feature-title">SEO Description</div>
+      <div class="feature-desc">120–200 word descriptions crafted with keywords to help your video rank on YouTube search.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-green">⚡</div>
+      <div class="feature-title">3 Hook Variations</div>
+      <div class="feature-desc">Three powerful opening lines to grab attention in the first 5 seconds and stop the scroll.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-pink">🖼</div>
+      <div class="feature-title">Thumbnail Blueprint</div>
+      <div class="feature-desc">Visual concept with background, text overlay, emotion, and main image — ready to build in Canva.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-orange">#</div>
+      <div class="feature-title">10–15 Hashtags</div>
+      <div class="feature-desc">Mix of broad and niche hashtags to maximize your video's discoverability on YouTube and beyond.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="section-eyebrow">Simple process</div>
+  <h2 class="section-title" style="text-align:center">How it works</h2>
+  <p class="section-sub" style="text-align:center;max-width:400px;margin:0 auto 50px">Three steps between you and a complete video content package.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Type your video topic</div>
+        <div class="step-desc">Enter what your video is about — one sentence is enough. Add your niche and preferred tone for better results.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">AI generates everything</div>
+        <div class="step-desc">In under 10 seconds, our AI engine creates your complete content package — titles, script, SEO, hashtags, and thumbnail concept.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">Copy, save, and publish</div>
+        <div class="step-desc">Copy any section with one tap. Save to your history. Regenerate what you don't love. Then go record your video.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-eyebrow">Simple pricing</div>
+  <h2 class="section-title">Invest less than a coffee<br>to save 5 hours per video</h2>
+  <p class="section-sub">Start free. Upgrade when you're ready. Cancel anytime.</p>
+  <div class="plans">
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0</div>
+      <div class="plan-period">forever</div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> 3 generations/month</li>
+        <li><span class="check">✓</span> All content sections</li>
+        <li><span class="check">✓</span> Copy to clipboard</li>
+        <li style="color:var(--muted)">✗ No history</li>
+        <li style="color:var(--muted)">✗ No regeneration</li>
+      </ul>
+      <button class="plan-btn outline" onclick="showFreeModal()">Get Started Free</button>
+    </div>
+    <div class="plan popular">
+      <div class="popular-badge">✦ Most Popular</div>
+      <div class="plan-name">Basic</div>
+      <div class="plan-price">$9<span>/mo</span></div>
+      <div class="plan-period">billed monthly</div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> 20 generations/month</li>
+        <li><span class="check">✓</span> All content sections</li>
+        <li><span class="check">✓</span> Save to history</li>
+        <li><span class="check">✓</span> Copy all sections</li>
+        <li style="color:var(--muted)">✗ Section regeneration</li>
+      </ul>
+      <button class="plan-btn solid" onclick="showPlanModal('Basic','9')">Start Basic →</button>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$19<span>/mo</span></div>
+      <div class="plan-period">billed monthly</div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> 60 generations/month</li>
+        <li><span class="check">✓</span> All content sections</li>
+        <li><span class="check">✓</span> Full history</li>
+        <li><span class="check">✓</span> Regenerate by section</li>
+        <li><span class="check">✓</span> Priority AI speed</li>
+      </ul>
+      <button class="plan-btn outline" onclick="showPlanModal('Pro','19')">Go Pro →</button>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Creator</div>
+      <div class="plan-price">$29<span>/mo</span></div>
+      <div class="plan-period">billed monthly</div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> Unlimited generations</li>
+        <li><span class="check">✓</span> Everything in Pro</li>
+        <li><span class="check">✓</span> API access</li>
+        <li><span class="check">✓</span> Bulk mode</li>
+        <li><span class="check">✓</span> Priority support</li>
+      </ul>
+      <button class="plan-btn outline" onclick="showPlanModal('Creator','29')">Go Creator →</button>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="section-eyebrow">Creators love it</div>
+  <h2 class="section-title">Real results from real creators</h2>
+  <div class="testi-grid">
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"I used to spend 3 hours per video just on titles and descriptions. CreatorForge does it in seconds. My CTR went up 40% in the first month."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#7c5cfc,#c084fc)">M</div>
+        <div>
+          <div class="testi-name">Marcus T.</div>
+          <div class="testi-role">Faith & Gospel Creator · 28K subs</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"The script structure alone is worth the price. I just fill in my personal stories and record. My videos are so much more organized now."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#22d3ee,#22c55e)">S</div>
+        <div>
+          <div class="testi-name">Sarah K.</div>
+          <div class="testi-role">Lifestyle Creator · 52K subs</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <div class="testi-text">"Best $19 I spend every month. I publish 3x more videos now because the content creation bottleneck is completely gone."</div>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#f4c430,#f97316)">D</div>
+        <div>
+          <div class="testi-name">David R.</div>
+          <div class="testi-role">Business Creator · 89K subs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div style="font-size:48px;margin-bottom:20px">✦</div>
+  <h2>Ready to grow your channel<br>faster than ever?</h2>
+  <p>Join thousands of creators who stopped wasting time and started publishing more.</p>
+  <button class="btn-primary" style="font-size:18px;padding:18px 40px">✨ Start for Free Today</button>
+  <p style="margin-top:16px;font-size:12px;color:var(--muted)">No credit card · 3 free generations · Takes 30 seconds to start</p>
+</section>
+
+<!-- TRUST BADGES -->
+<section style="padding:50px 24px;border-top:1px solid var(--border);background:var(--bg)">
+  <p style="text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:28px">Trusted & Verified</p>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:700px;margin:0 auto 40px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;min-width:140px">
+      <span style="font-size:22px">🔒</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text)">SSL Secured</div>
+        <div style="font-size:10px;color:var(--muted)">256-bit encryption</div>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;min-width:140px">
+      <span style="font-size:22px">💳</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text)">Stripe Verified</div>
+        <div style="font-size:10px;color:var(--muted)">Safe payments</div>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;min-width:140px">
+      <span style="font-size:22px">⭐</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text)">4.9 / 5 Rating</div>
+        <div style="font-size:10px;color:var(--muted)">By 1,200+ creators</div>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;min-width:140px">
+      <span style="font-size:22px">🌍</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text)">GDPR Ready</div>
+        <div style="font-size:10px;color:var(--muted)">Privacy compliant</div>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;min-width:140px">
+      <span style="font-size:22px">🤖</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text)">AI Powered</div>
+        <div style="font-size:10px;color:var(--muted)">Latest models</div>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:10px;min-width:140px">
+      <span style="font-size:22px">♾️</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text)">Any Niche</div>
+        <div style="font-size:10px;color:var(--muted)">Works for all topics</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISUAL BANNER -->
+  <div style="max-width:700px;margin:0 auto;border-radius:20px;overflow:hidden;border:1px solid var(--border);position:relative;background:linear-gradient(135deg,#0d0020,#001020,#050515);padding:40px 28px;text-align:center">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 30% 50%,rgba(124,92,252,0.18) 0%,transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(34,211,238,0.1) 0%,transparent 60%);pointer-events:none"></div>
+    <div style="font-size:48px;margin-bottom:12px">🎬</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,var(--p),var(--p2),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent">From Idea to Published</div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto">Type your topic → AI generates everything → You record → You publish. It's that simple.</div>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+      <div style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--p2)">📝 Topic Input</div>
+      <div style="color:var(--muted);font-size:20px;display:flex;align-items:center">→</div>
+      <div style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.2);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--cyan)">🤖 AI Generates</div>
+      <div style="color:var(--muted);font-size:20px;display:flex;align-items:center">→</div>
+      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--green)">🎥 You Publish</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section style="padding:80px 24px;background:var(--s1);border-top:1px solid var(--border)" id="contact">
+  <div style="max-width:560px;margin:0 auto;text-align:center">
+    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--p);margin-bottom:12px">Get in touch</p>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;margin-bottom:12px;line-height:1.2">Have a question?<br>We're here to help.</h2>
+    <p style="color:var(--muted);font-size:15px;margin-bottom:36px">Our team responds within 24 hours. Or ask our AI Support Agent anytime — it's available 24/7 in the chat button below.</p>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <input id="cname" placeholder="Your name" style="background:var(--s1);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:13px 16px;outline:none;width:100%" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border)'">
+        <input id="cemail" placeholder="Your email" style="background:var(--s1);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:13px 16px;outline:none;width:100%" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border)'">
+        <textarea id="cmsg" placeholder="Your message..." rows="4" style="background:var(--s1);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:13px 16px;outline:none;width:100%;resize:none" onfocus="this.style.borderColor='var(--p)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        <button onclick="sendContact()" style="background:linear-gradient(135deg,var(--p),#9b59fc);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer">Send Message →</button>
+        <div id="contactSuccess" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:12px;color:var(--green);font-size:13px;text-align:center">✅ Message sent! We'll reply to your email within 24 hours.</div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px">
+        <span style="font-size:16px">✉️</span>
+        <a href="mailto:creatorforge9@gmail.com" style="color:var(--p2);font-size:13px;text-decoration:none;font-weight:500">creatorforge9@gmail.com</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function sendContact(){
+  const name=document.getElementById('cname').value.trim();
+  const email=document.getElementById('cemail').value.trim();
+  const msg=document.getElementById('cmsg').value.trim();
+  if(!name||!email||!msg){alert('Please fill in all fields.');return;}
+  // Opens email client with prefilled message
+  const subject=encodeURIComponent('CreatorForge - Message from '+name);
+  const body=encodeURIComponent('Name: '+name+'\nEmail: '+email+'\n\nMessage:\n'+msg);
+  window.location.href='mailto:creatorforge9@gmail.com?subject='+subject+'&body='+body;
+  document.getElementById('contactSuccess').style.display='block';
+}
+</script>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">CreatorForge ✦</div>
+  <div class="footer-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#contact">Contact</a>
+    <a href="#">Blog</a>
+  </div>
+  <div class="footer-copy">© 2025 CreatorForge. Built for YouTube creators worldwide.</div>
+</footer>
+
+<!-- AI SUPPORT CHAT -->
+<style>
+.chat-bubble{
+  position:fixed;bottom:24px;right:24px;z-index:9999;
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,var(--p),#9b59fc);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 8px 32px rgba(124,92,252,0.5);
+  font-size:24px;border:none;
+  transition:transform 0.2s,box-shadow 0.2s;
+  animation:pulse-ring 2.5s ease-in-out infinite;
+}
+.chat-bubble:hover{transform:scale(1.1);box-shadow:0 12px 40px rgba(124,92,252,0.7)}
+@keyframes pulse-ring{
+  0%{box-shadow:0 0 0 0 rgba(124,92,252,0.5)}
+  70%{box-shadow:0 0 0 14px rgba(124,92,252,0)}
+  100%{box-shadow:0 0 0 0 rgba(124,92,252,0)}
+}
+.chat-window{
+  position:fixed;bottom:90px;right:24px;z-index:9999;
+  width:320px;max-height:480px;
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:20px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  display:none;flex-direction:column;
+  font-family:'Inter',sans-serif;
+}
+.chat-window.open{display:flex}
+.chat-header{
+  background:linear-gradient(135deg,var(--p),#9b59fc);
+  padding:14px 16px;display:flex;align-items:center;gap:10px;
+}
+.chat-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,0.2);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.chat-header-info{}
+.chat-header-name{font-size:14px;font-weight:700;color:#fff}
+.chat-header-status{font-size:11px;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:4px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#22c55e}
+.chat-messages{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:10px;
+  max-height:320px;
+}
+.msg{max-width:85%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.5}
+.msg.bot{background:var(--card);color:var(--light);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.user{background:linear-gradient(135deg,var(--p),#9b59fc);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.msg-time{font-size:10px;color:var(--muted);margin-top:3px}
+.chat-suggestions{
+  padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:6px;
+}
+.sugg-btn{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;color:var(--light);
+  font-size:11px;padding:5px 10px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:border-color 0.15s;
+}
+.sugg-btn:hover{border-color:var(--p);color:var(--p2)}
+.chat-input-row{
+  padding:12px;border-top:1px solid var(--border);
+  display:flex;gap:8px;align-items:center;
+}
+.chat-input{
+  flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:20px;color:var(--text);
+  font-size:13px;padding:9px 14px;outline:none;
+  font-family:'Inter',sans-serif;
+}
+.chat-input:focus{border-color:var(--p)}
+.chat-send{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--p),#9b59fc);
+  border:none;color:#fff;font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.typing{display:flex;gap:4px;align-items:center;padding:4px 0}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typing-dot 1.2s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes typing-dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.chat-notify{
+  position:absolute;top:-4px;right:-4px;
+  width:18px;height:18px;border-radius:50%;
+  background:#f43f5e;color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+</style>
+
+<!-- Chat Button -->
+<button class="chat-bubble" onclick="toggleChat()" id="chatBtn">
+  💬
+  <div class="chat-notify" id="chatNotify">1</div>
+</button>
+
+<!-- Chat Window -->
+<div class="chat-window" id="chatWindow">
+  <div class="chat-header">
+    <div class="chat-avatar">🤖</div>
+    <div class="chat-header-info">
+      <div class="chat-header-name">CreatorForge Assistant</div>
+      <div class="chat-header-status"><span class="status-dot"></span> Online · Replies instantly</div>
+    </div>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="msg bot">
+      Hey! 👋 I'm your CreatorForge AI Assistant. I can help you with:
+      <br><br>• How the platform works<br>• Choosing the right plan<br>• Getting started<br>• Any other questions!
+      <div class="msg-time">Just now</div>
+    </div>
+  </div>
+  <div class="chat-suggestions" id="chatSuggestions">
+    <button class="sugg-btn" onclick="askQuestion('How does CreatorForge work?')">How does it work?</button>
+    <button class="sugg-btn" onclick="askQuestion('What plan should I choose?')">Which plan?</button>
+    <button class="sugg-btn" onclick="askQuestion('Is there a free trial?')">Free trial?</button>
+    <button class="sugg-btn" onclick="askQuestion('What niches does it support?')">What niches?</button>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">➤</button>
+  </div>
+</div>
+
+<script>
+function toggleChat(){
+  const w=document.getElementById('chatWindow');
+  const n=document.getElementById('chatNotify');
+  w.classList.toggle('open');
+  if(n) n.style.display='none';
+}
+
+function askQuestion(q){
+  document.getElementById('chatInput').value=q;
+  sendChat();
+}
+
+const botAnswers={
+  'how does creator':   "Simple! 3 steps:\n1️⃣ Type your video topic\n2️⃣ Choose your niche & tone\n3️⃣ Click Generate ✨\n\nIn under 10 seconds you get: 5 viral titles, full script, SEO description, hashtags, and thumbnail concept. Ready to use!",
+  'what plan':          "Depends on how often you publish:\n\n🆓 Free → 1–2 videos/month\n💙 Basic $9 → up to 5/month\n💜 Pro $19 → up to 15/month\n⭐ Creator $29 → unlimited\n\nMost new creators start with Basic!",
+  'free':               "Yes! The Free plan gives you 3 full generations — no credit card needed. You get all sections: titles, script, hashtags, SEO, and thumbnail idea. 🎉",
+  'trial':              "Yes! The Free plan gives you 3 full generations — no credit card needed. Try it before deciding to upgrade! 🎉",
+  'niche':              "CreatorForge works for ANY niche:\n🙏 Faith & Gospel\n💼 Business & Finance\n💪 Fitness\n🎓 Education\n🎵 Music\n🎮 Gaming\n✈️ Travel\n🍳 Cooking\n💻 Tech\n...and more! 🎯",
+  'how much':           "Pricing is simple:\n🆓 Free — $0/month (3 generations)\n💙 Basic — $9/month (20 generations)\n💜 Pro — $19/month (60 generations)\n⭐ Creator — $29/month (unlimited)\n\nNo hidden fees!",
+  'cancel':             "Cancel anytime! No contracts, no cancellation fees. Your plan stays active until the end of the billing period. 😊",
+  'script':             "Every generation includes a full script:\n🎬 Hook (0–15 sec) — stops the scroll\n📢 Intro (15–60 sec) — sets the topic\n📌 3-part Body — main content points\n👋 Outro — recap + call to action\n\nJust fill in your personal stories and record! 🎤",
+  'thumbnail':          "The thumbnail section gives you:\n🖼 Background style\n👤 Main visual element\n✍️ Bold text overlay (3–4 words)\n😮 Target emotion\n\nBuild it in Canva in minutes!",
+  'hashtag':            "You get 10–15 hashtags per generation — mix of broad (high reach) and niche-specific tags. Just copy and paste into YouTube! #️⃣",
+  'title':              "You get 5 viral titles per generation, each with a different format:\n🔥 Curiosity-driven\n📋 List format\n💡 How-to format\n😮 Bold statement\n❤️ Emotional hook\n\nTap any title to copy it instantly!",
+  'price':              "Plans start at $0! Then $9, $19, or $29/month. All plans include every content section. No hidden fees!",
+  'error':              "If you see an error, try:\n1. Refresh the page\n2. Check your internet connection\n3. Try again in a few seconds\n\nStill having issues? Email us: creatorforge9@gmail.com 📧",
+  'contact':            "You can reach us at:\n📧 creatorforge9@gmail.com\n\nOr use the Contact section at the bottom of this page. We reply within 24 hours! 😊",
+  'email':              "Our email is:\n📧 creatorforge9@gmail.com\n\nWe reply within 24 hours!",
+  'seo':                "Yes! Every generation includes a 120–200 word SEO description with your main keyword in the first sentence. Just copy and paste it into your YouTube video description! 🔍",
+  'default':            "Thanks for your question! 😊 I can help you with:\n\n• How CreatorForge works\n• Choosing a plan\n• Free trial info\n• Supported niches\n• Pricing\n• Technical issues\n\nWhat would you like to know?"
+};
+
+function getBotReply(msg){
+  const m=msg.toLowerCase();
+  for(const[key,val] of Object.entries(botAnswers)){
+    if(key!=='default' && m.includes(key)) return val;
+  }
+  return botAnswers['default'];
+}
+
+function sendChat(){
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();
+  if(!msg) return;
+  input.value='';
+  input.focus();
+
+  document.getElementById('chatSuggestions').style.display='none';
+  addMsg(msg,'user');
+
+  const typing=document.createElement('div');
+  typing.className='msg bot';
+  typing.id='typing';
+  typing.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
+  document.getElementById('chatMessages').appendChild(typing);
+  scrollChat();
+
+  setTimeout(()=>{
+    document.getElementById('typing')?.remove();
+    addMsg(getBotReply(msg),'bot');
+  }, 1200);
+}
+
+function addMsg(text,type){
+  const msgs=document.getElementById('chatMessages');
+  const div=document.createElement('div');
+  div.className=`msg ${type}`;
+  div.innerHTML=text.replace(/\n/g,'<br>')+`<div class="msg-time">Just now</div>`;
+  msgs.appendChild(div);
+  scrollChat();
+}
+
+function scrollChat(){
+  const msgs=document.getElementById('chatMessages');
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// PLAN MODALS
+function showFreeModal(){
+  showModal('🎉 Start for Free!',
+    'Get 3 full content generations — no credit card required.<br><br>✅ Viral titles<br>✅ Full video script<br>✅ SEO description<br>✅ Hashtags<br>✅ Thumbnail concept<br><br>Ready to try it?',
+    'Open App Free', ()=>{ window.location.href='creatorforge-app-1.html'; }
+  );
+}
+
+function showPlanModal(name, price){
+  showModal(`💜 ${name} Plan — $${price}/month`,
+    `You selected the <strong>${name}</strong> plan at <strong>$${price}/month</strong>.<br><br>To complete your subscription, please contact us and we will set up your account:<br><br>📧 <strong>creatorforge9@gmail.com</strong><br><br>Include your email and selected plan in your message. We'll get you set up within 24 hours!`,
+    'Send Email Now', ()=>{ window.location.href=`mailto:creatorforge9@gmail.com?subject=CreatorForge ${name} Plan Signup&body=Hi! I'd like to subscribe to the ${name} plan ($${price}/month). Please set up my account. My email is: `; }
+  );
+}
+
+function showModal(title, body, btnText, btnAction){
+  const existing=document.getElementById('cfModal');
+  if(existing) existing.remove();
+
+  const modal=document.createElement('div');
+  modal.id='cfModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)';
+  modal.innerHTML=`
+    <div style="background:#16162a;border:1px solid #7c5cfc;border-radius:20px;padding:28px;max-width:360px;width:100%;position:relative">
+      <button onclick="document.getElementById('cfModal').remove()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#888;font-size:20px;cursor:pointer">✕</button>
+      <div style="font-size:28px;margin-bottom:12px;text-align:center">${title.split(' ')[0]}</div>
+      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:14px;text-align:center">${title.substring(title.indexOf(' ')+1)}</h3>
+      <p style="font-size:14px;color:#b0b0cc;line-height:1.7;margin-bottom:22px">${body}</p>
+      <button onclick="(${btnAction.toString()})()" style="width:100%;background:linear-gradient(135deg,#7c5cfc,#9b59fc);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;margin-bottom:10px">${btnText}</button>
+      <button onclick="document.getElementById('cfModal').remove()" style="width:100%;background:none;border:1px solid #2a2a38;border-radius:10px;color:#888;font-size:14px;padding:12px;cursor:pointer">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+</script>
 </body>
 </html>
