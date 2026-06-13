@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreatorForge — Your Personal YouTube AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --card: #1a1a24;
+    --border: #2a2a38;
+    --accent: #7c5cfc;
+    --accent2: #c084fc;
+    --gold: #f4c430;
+    --text: #f0f0f8;
+    --muted: #888;
+    --green: #22c55e;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px 0;
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a0a3a 0%, #0a0a1f 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .logo-badge {
+    font-size: 10px;
+    background: var(--accent);
+    color: white;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    -webkit-text-fill-color: white;
+    margin-top: 2px;
+  }
+
+  .hero {
+    padding: 32px 20px 20px;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .input-section {
+    padding: 20px;
+  }
+
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .input-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    padding: 14px;
+    resize: none;
+    height: 90px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus {
+    border-color: var(--accent);
+  }
+
+  textarea::placeholder { color: #555; }
+
+  .selects-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  select {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    width: 100%;
+  }
+
+  .btn-generate {
+    width: 100%;
+    margin-top: 14px;
+    background: linear-gradient(135deg, var(--accent), #9b59fc);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 16px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-generate:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 14px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .results {
+    display: none;
+    padding: 0 20px;
+  }
+
+  .section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .result-card.accent-border {
+    border-color: var(--accent);
+  }
+
+  .title-item {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .title-item:last-child { margin-bottom: 0; }
+  .title-item:active { background: #252535; }
+
+  .title-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 18px;
+    margin-top: 1px;
+  }
+
+  .hook-item {
+    background: var(--card);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+    font-style: italic;
+    color: #ccc;
+  }
+
+  .hook-item:last-child { margin-bottom: 0; }
+
+  .script-section {
+    margin-bottom: 12px;
+  }
+
+  .script-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .script-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #ccc;
+    background: var(--card);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .hashtags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hashtag {
+    background: #1e1435;
+    border: 1px solid #3d2a6e;
+    border-radius: 20px;
+    color: var(--accent2);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px;
+  }
+
+  .description-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #ccc;
+  }
+
+  .thumbnail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .thumb-item {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .thumb-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .thumb-value {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .thumb-emotion {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #1a0a2e, #0e1a2e);
+    border: 1px solid #3d2a6e;
+  }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .copy-btn:active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .copy-btn.copied {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .regenerate-btn {
+    width: 100%;
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 6px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .regenerate-btn:active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .error-msg {
+    background: #2a1020;
+    border: 1px solid #5a2040;
+    border-radius: 12px;
+    color: #f87171;
+    font-size: 14px;
+    padding: 14px 16px;
+    margin: 0 20px;
+    display: none;
+  }
+
+  .tap-hint {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">CreatorForge ✦</div>
+  </div>
+  <div class="logo-badge">AI</div>
+</header>
+
+<div class="hero">
+  <h1>Turn any topic into a<br><span>full YouTube package</span></h1>
+  <p>Titles · Script · SEO · Hashtags · Thumbnail</p>
+</div>
+
+<div class="input-section">
+  <div class="input-card">
+    <div class="input-label">Your video topic</div>
+    <textarea id="topicInput" placeholder="Ex: 10 habits that changed my life, How to start investing, Best guitar tips for beginners..."></textarea>
+    <div class="selects-row">
+      <select id="nicheSelect">
+        <option value="" disabled selected>Select your niche</option>
+        <option value="Business">Business</option>
+        <option value="Education">Education</option>
+        <option value="Faith & Gospel">Faith & Gospel</option>
+        <option value="Finance">Finance</option>
+        <option value="Fitness">Fitness</option>
+        <option value="Food & Cooking">Food & Cooking</option>
+        <option value="Gaming">Gaming</option>
+        <option value="Lifestyle">Lifestyle</option>
+        <option value="Music">Music</option>
+        <option value="Personal Development">Personal Development</option>
+        <option value="Tech">Tech</option>
+        <option value="Travel">Travel</option>
+      </select>
+      </select>
+      <select id="toneSelect">
+        <option value="Inspirational">Inspirational</option>
+        <option value="Educational">Educational</option>
+        <option value="Entertaining">Entertaining</option>
+        <option value="Emotional">Emotional</option>
+        <option value="Motivational">Motivational</option>
+      </select>
+    </div>
+    <button class="btn-generate" id="generateBtn" onclick="generate()">
+      ✨ Generate Content
+    </button>
+    <p class="tap-hint">~5 seconds · Powered by AI</p>
+  </div>
+</div>
+
+<div class="error-msg" id="errorMsg"></div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div>Generating your content package...</div>
+  <div style="font-size:12px;margin-top:6px;color:#555">This may take a few seconds</div>
+</div>
+
+<div class="results" id="results">
+
+  <!-- TITLES -->
+  <div class="result-card accent-border">
+    <div class="section-title">🔥 Viral Titles</div>
+    <div id="titlesContainer"></div>
+    <p class="tap-hint" style="margin-top:8px">Tap a title to copy</p>
+  </div>
+
+  <!-- HOOKS -->
+  <div class="result-card">
+    <div class="section-title">⚡ Opening Hooks</div>
+    <div id="hooksContainer"></div>
+  </div>
+
+  <!-- SCRIPT -->
+  <div class="result-card">
+    <div class="section-title">📝 Video Script</div>
+    <div id="scriptContainer"></div>
+    <button class="copy-btn" onclick="copySection('scriptContainer')">Copy Full Script</button>
+  </div>
+
+  <!-- SEO DESCRIPTION -->
+  <div class="result-card">
+    <div class="section-title">🔍 SEO Description</div>
+    <div class="description-text" id="descriptionContainer"></div>
+    <button class="copy-btn" onclick="copySection('descriptionContainer')">Copy Description</button>
+  </div>
+
+  <!-- HASHTAGS -->
+  <div class="result-card">
+    <div class="section-title"># Hashtags</div>
+    <div class="hashtags-wrap" id="hashtagsContainer"></div>
+    <button class="copy-btn" onclick="copyHashtags()">Copy All Hashtags</button>
+  </div>
+
+  <!-- THUMBNAIL -->
+  <div class="result-card">
+    <div class="section-title">🖼 Thumbnail Idea</div>
+    <div class="thumbnail-grid" id="thumbnailContainer"></div>
+  </div>
+
+  <button class="regenerate-btn" onclick="generate()">↻ Generate Again</button>
+
+</div>
+
+<script>
+async function generate() {
+  const topic = document.getElementById('topicInput').value.trim();
+  const niche = document.getElementById('nicheSelect').value;
+  const tone = document.getElementById('toneSelect').value;
+
+  if (!topic) {
+    showError('Please enter your video topic first.');
+    return;
+  }
+
+  hideError();
+  showLoading(true);
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('generateBtn').disabled = true;
+
+  const prompt = `You are an expert YouTube content strategist.
+
+Video topic: "${topic}"
+Niche: ${niche}
+Tone: ${tone}
+
+Return ONLY valid JSON, no markdown, no extra text:
+
+{
+  "titles": ["title1","title2","title3","title4","title5"],
+  "hooks": ["hook1","hook2","hook3"],
+  "seo_description": "120-200 word SEO description here",
+  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"],
+  "script": {
+    "hook": "First 15 seconds script",
+    "intro": "30-45 seconds intro",
+    "body": [
+      {"section":"Point 1","content":"Script content"},
+      {"section":"Point 2","content":"Script content"},
+      {"section":"Point 3","content":"Script content"}
+    ],
+    "outro": "Closing 30 seconds"
+  },
+  "thumbnail": {
+    "background": "Background description",
+    "main_image": "Main visual element",
+    "text_overlay": "Bold 3-4 word text",
+    "emotion": "Target emotion"
+  }
+}`;
+
+  try {
+    const response = await fetch('/.netlify/functions/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic, niche, tone })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    renderResults(data);
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    renderResults(result);
+  } catch (err) {
+    showError('Something went wrong. Please try again.');
+  } finally {
+    showLoading(false);
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+function renderResults(data) {
+  // Titles
+  const tc = document.getElementById('titlesContainer');
+  tc.innerHTML = data.titles.map((t, i) => `
+    <div class="title-item" onclick="copyText('${escapeQuotes(t)}', this)">
+      <span class="title-num">${i+1}</span>
+      <span>${t}</span>
+    </div>
+  `).join('');
+
+  // Hooks
+  document.getElementById('hooksContainer').innerHTML =
+    data.hooks.map(h => `<div class="hook-item">"${h}"</div>`).join('');
+
+  // Script
+  const sc = document.getElementById('scriptContainer');
+  let scriptHtml = `
+    <div class="script-section">
+      <div class="script-label">🎬 Hook (0:00–0:15)</div>
+      <div class="script-text">${data.script.hook}</div>
+    </div>
+    <div class="script-section">
+      <div class="script-label">📢 Intro (0:15–1:00)</div>
+      <div class="script-text">${data.script.intro}</div>
+    </div>
+  `;
+  data.script.body.forEach((b, i) => {
+    scriptHtml += `
+      <div class="script-section">
+        <div class="script-label">📌 ${b.section}</div>
+        <div class="script-text">${b.content}</div>
+      </div>
+    `;
+  });
+  scriptHtml += `
+    <div class="script-section">
+      <div class="script-label">🙏 Outro</div>
+      <div class="script-text">${data.script.outro}</div>
+    </div>
+  `;
+  sc.innerHTML = scriptHtml;
+
+  // Description
+  document.getElementById('descriptionContainer').innerText = data.seo_description;
+
+  // Hashtags
+  document.getElementById('hashtagsContainer').innerHTML =
+    data.hashtags.map(h => `<span class="hashtag">${h}</span>`).join('');
+
+  // Thumbnail
+  const th = data.thumbnail;
+  document.getElementById('thumbnailContainer').innerHTML = `
+    <div class="thumb-item">
+      <div class="thumb-label">Background</div>
+      <div class="thumb-value">${th.background}</div>
+    </div>
+    <div class="thumb-item">
+      <div class="thumb-label">Main Image</div>
+      <div class="thumb-value">${th.main_image}</div>
+    </div>
+    <div class="thumb-item">
+      <div class="thumb-label">Text Overlay</div>
+      <div class="thumb-value" style="font-weight:700;font-size:15px;color:var(--gold)">${th.text_overlay}</div>
+    </div>
+    <div class="thumb-item thumb-emotion">
+      <div class="thumb-label">Target Emotion</div>
+      <div class="thumb-value" style="color:var(--accent2)">${th.emotion}</div>
+    </div>
+  `;
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyText(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    if (el) {
+      const orig = el.style.background;
+      el.style.background = '#1a3a1a';
+      setTimeout(() => el.style.background = orig, 800);
+    }
+  });
+}
+
+function copySection(id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = btn.textContent.includes('Script') ? 'Copy Full Script' : 'Copy Description';
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+function copyHashtags() {
+  const tags = [...document.querySelectorAll('.hashtag')].map(t => t.textContent).join(' ');
+  navigator.clipboard.writeText(tags).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy All Hashtags'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function escapeQuotes(str) {
+  return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+function showLoading(show) {
+  document.getElementById('loading').style.display = show ? 'block' : 'none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('errorMsg').style.display = 'none';
+}
+</script>
+
+<!-- AI SUPPORT CHAT -->
+<style>
+.chat-bubble{
+  position:fixed;bottom:20px;right:20px;z-index:9999;
+  width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#9b59fc);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:22px;border:none;
+  box-shadow:0 8px 28px rgba(124,92,252,0.5);
+  animation:pulse-ring 2.5s ease-in-out infinite;
+}
+@keyframes pulse-ring{
+  0%{box-shadow:0 0 0 0 rgba(124,92,252,0.5)}
+  70%{box-shadow:0 0 0 12px rgba(124,92,252,0)}
+  100%{box-shadow:0 0 0 0 rgba(124,92,252,0)}
+}
+.chat-notify{
+  position:absolute;top:-3px;right:-3px;
+  width:17px;height:17px;border-radius:50%;
+  background:#f43f5e;color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.chat-window{
+  position:fixed;bottom:84px;right:16px;z-index:9999;
+  width:300px;max-height:440px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,0.7);
+  display:none;flex-direction:column;
+  font-family:'Inter',sans-serif;
+}
+.chat-window.open{display:flex}
+.chat-header{
+  background:linear-gradient(135deg,var(--accent),#9b59fc);
+  padding:12px 14px;display:flex;align-items:center;gap:10px;
+}
+.chat-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.chat-hname{font-size:13px;font-weight:700;color:#fff}
+.chat-hstatus{font-size:10px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:4px}
+.sdot{width:5px;height:5px;border-radius:50%;background:#22c55e}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:280px}
+.cmsg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:12px;line-height:1.5}
+.cmsg.bot{background:var(--card);color:#ccc;align-self:flex-start;border-bottom-left-radius:3px}
+.cmsg.user{background:linear-gradient(135deg,var(--accent),#9b59fc);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.csugg{padding:0 10px 8px;display:flex;flex-wrap:wrap;gap:5px}
+.csb{background:var(--card);border:1px solid var(--border);border-radius:16px;color:#bbb;font-size:11px;padding:4px 9px;cursor:pointer;font-family:'Inter',sans-serif;}
+.cinput-row{padding:10px;border-top:1px solid var(--border);display:flex;gap:7px;align-items:center}
+.cinput{flex:1;background:var(--card);border:1px solid var(--border);border-radius:16px;color:var(--text);font-size:12px;padding:8px 12px;outline:none;font-family:'Inter',sans-serif;}
+.cinput:focus{border-color:var(--accent)}
+.csend{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;color:#fff;font-size:13px;cursor:pointer;flex-shrink:0;}
+.typing-dots{display:flex;gap:3px;align-items:center;padding:2px 0}
+.typing-dots span{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:tdot 1.2s ease-in-out infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+</style>
+
+<button class="chat-bubble" onclick="toggleChat()" style="position:fixed;bottom:20px;right:20px">
+  💬
+  <div class="chat-notify" id="chatNotify">1</div>
+</button>
+
+<div class="chat-window" id="chatWindow">
+  <div class="chat-header">
+    <div class="chat-avatar">🤖</div>
+    <div>
+      <div class="chat-hname">CreatorForge Support</div>
+      <div class="chat-hstatus"><span class="sdot"></span> Online · Instant replies</div>
+    </div>
+  </div>
+  <div class="chat-msgs" id="chatMsgs">
+    <div class="cmsg bot">Hey! 👋 Need help using CreatorForge? Ask me anything — I'm here 24/7!</div>
+  </div>
+  <div class="csugg" id="csugg">
+    <button class="csb" onclick="askQ('How do I generate content?')">How to generate?</button>
+    <button class="csb" onclick="askQ('What niches are supported?')">What niches?</button>
+    <button class="csb" onclick="askQ('How do I copy results?')">Copy results?</button>
+    <button class="csb" onclick="askQ('Why did it show an error?')">Got an error?</button>
+  </div>
+  <div class="cinput-row">
+    <input class="cinput" id="cinput" placeholder="Type your question..." onkeydown="if(event.key==='Enter')sendC()">
+    <button class="csend" onclick="sendC()">➤</button>
+  </div>
+</div>
+
+<script>
+function toggleChat(){
+  const w=document.getElementById('chatWindow');
+  w.classList.toggle('open');
+  document.getElementById('chatNotify').style.display='none';
+}
+function askQ(q){document.getElementById('cinput').value=q;sendC();}
+const cAnswers={
+  'how do i generate':'Type your video topic in the text box, select your niche and tone, then tap ✨ Generate Content. Results appear in about 5 seconds! 🚀',
+  'what niches':'CreatorForge works for ANY niche — Business, Fitness, Education, Faith, Finance, Gaming, Music, Travel, Tech, Lifestyle and more. Just select yours from the dropdown! 🎯',
+  'how do i copy':'Each section has a Copy button. For titles, just tap the title directly to copy it instantly! 📋',
+  'why did it show an error':'This usually means the AI service is temporarily unavailable. Wait a few seconds and try again. If it keeps happening, try refreshing the page. 🔄',
+  'how many':'You get 3 free generations per month. Upgrade to Basic ($9) for 20, Pro ($19) for 60, or Creator ($29) for unlimited! 💎',
+  'script':'Yes! Every generation includes a full script: Hook (0–15s), Intro, 3-part Body, and Outro. Copy it all with one tap! 📝',
+  'thumbnail':'The thumbnail section gives you a visual concept — background, main image, bold text overlay, and target emotion. Build it in Canva in minutes! 🖼',
+  'hashtag':'You get 10–15 hashtags per generation — a mix of broad and niche-specific. Tap "Copy All Hashtags" to grab them! #️⃣',
+  'default':'Great question! I\'m here to help with anything about CreatorForge. Could you tell me more about what you need? 😊'
+};
+function getCReply(msg){
+  const m=msg.toLowerCase();
+  for(const[k,v] of Object.entries(cAnswers)){
+    if(k!=='default'&&m.includes(k))return v;
+  }
+  return cAnswers['default'];
+}
+function sendC(){
+  const inp=document.getElementById('cinput');
+  const msg=inp.value.trim();
+  if(!msg)return;
+  inp.value='';
+  document.getElementById('csugg').style.display='none';
+  addCMsg(msg,'user');
+  const t=document.createElement('div');
+  t.className='cmsg bot';t.id='ctyping';
+  t.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+  document.getElementById('chatMsgs').appendChild(t);
+  scrollC();
+  setTimeout(()=>{document.getElementById('ctyping')?.remove();addCMsg(getCReply(msg),'bot');},1100);
+}
+function addCMsg(text,type){
+  const m=document.getElementById('chatMsgs');
+  const d=document.createElement('div');
+  d.className=`cmsg ${type}`;
+  d.innerHTML=text.replace(/\n/g,'<br>');
+  m.appendChild(d);scrollC();
+}
+function scrollC(){const m=document.getElementById('chatMsgs');m.scrollTop=m.scrollHeight;}
+</script>
+</body>
+</html>
