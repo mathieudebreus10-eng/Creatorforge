@@ -1,0 +1,76 @@
+exports.handler = async function(event, context) {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
+  const { topic, niche, tone } = JSON.parse(event.body);
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+  const prompt = `You are an expert YouTube content strategist.
+
+Video topic: "${topic}"
+Niche: ${niche}
+Tone: ${tone}
+
+Return ONLY valid JSON, no markdown, no extra text:
+
+{
+  "titles": ["title1","title2","title3","title4","title5"],
+  "hooks": ["hook1","hook2","hook3"],
+  "seo_description": "120-200 word SEO description here",
+  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"],
+  "script": {
+    "hook": "First 15 seconds script",
+    "intro": "30-45 seconds intro",
+    "body": [
+      {"section":"Point 1","content":"Script content"},
+      {"section":"Point 2","content":"Script content"},
+      {"section":"Point 3","content":"Script content"}
+    ],
+    "outro": "Closing 30 seconds"
+  },
+  "thumbnail": {
+    "background": "Background description",
+    "main_image": "Main visual element",
+    "text_overlay": "Bold 3-4 word text",
+    "emotion": "Target emotion"
+  }
+}`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 2000,
+        temperature: 0.7,
+        messages: [
+          { role: 'system', content: 'You are an expert YouTube content strategist. Always respond with valid JSON only, no markdown, no extra text.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.choices[0].message.content;
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(result)
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message })
+    };
+  }
+};
+
