@@ -435,7 +435,6 @@
         <option value="Tech">Tech</option>
         <option value="Travel">Travel</option>
       </select>
-      </select>
       <select id="toneSelect">
         <option value="Inspirational">Inspirational</option>
         <option value="Educational">Educational</option>
@@ -521,37 +520,6 @@ async function generate() {
   document.getElementById('results').style.display = 'none';
   document.getElementById('generateBtn').disabled = true;
 
-  const prompt = `You are an expert YouTube content strategist.
-
-Video topic: "${topic}"
-Niche: ${niche}
-Tone: ${tone}
-
-Return ONLY valid JSON, no markdown, no extra text:
-
-{
-  "titles": ["title1","title2","title3","title4","title5"],
-  "hooks": ["hook1","hook2","hook3"],
-  "seo_description": "120-200 word SEO description here",
-  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"],
-  "script": {
-    "hook": "First 15 seconds script",
-    "intro": "30-45 seconds intro",
-    "body": [
-      {"section":"Point 1","content":"Script content"},
-      {"section":"Point 2","content":"Script content"},
-      {"section":"Point 3","content":"Script content"}
-    ],
-    "outro": "Closing 30 seconds"
-  },
-  "thumbnail": {
-    "background": "Background description",
-    "main_image": "Main visual element",
-    "text_overlay": "Bold 3-4 word text",
-    "emotion": "Target emotion"
-  }
-}`;
-
   try {
     const response = await fetch('/.netlify/functions/generate', {
       method: 'POST',
@@ -562,10 +530,7 @@ Return ONLY valid JSON, no markdown, no extra text:
     const data = await response.json();
     if (data.error) throw new Error(data.error);
     renderResults(data);
-    const clean = text.replace(/```json|```/g, '').trim();
-    const result = JSON.parse(clean);
 
-    renderResults(result);
   } catch (err) {
     showError('Something went wrong. Please try again.');
   } finally {
