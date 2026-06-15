@@ -54,6 +54,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
 .google-btn:hover{border-color:var(--p)}
 
 .footer-note{color:var(--muted);font-size:12px;text-align:center;margin-top:20px;line-height:1.6}
+.password-wrap{position:relative}
+.password-wrap .form-input{padding-right:44px}
+.eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;line-height:1}
 </style>
 </head>
 <body>
@@ -75,7 +78,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input class="form-input" type="password" id="loginPassword" placeholder="••••••••">
+      <div class="password-wrap">
+        <input class="form-input" type="password" id="loginPassword" placeholder="••••••••">
+        <button class="eye-btn" type="button" onclick="togglePassword('loginPassword', this)">👁️</button>
+      </div>
     </div>
     <button class="btn" onclick="handleLogin()" id="loginBtn">Sign In →</button>
     <div class="msg" id="loginMsg"></div>
@@ -93,7 +99,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input class="form-input" type="password" id="signupPassword" placeholder="Min 6 characters">
+      <div class="password-wrap">
+        <input class="form-input" type="password" id="signupPassword" placeholder="Min 6 characters">
+        <button class="eye-btn" type="button" onclick="togglePassword('signupPassword', this)">👁️</button>
+      </div>
     </div>
     <button class="btn" onclick="handleSignup()" id="signupBtn">Create Free Account →</button>
     <div class="msg" id="signupMsg"></div>
@@ -118,6 +127,17 @@ const SUPABASE_KEY = 'sb_publishable_-yEONjxLyxpHBM1QDRe4Zw_a3QTiH5b'
 
 const { createClient } = supabase
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+function togglePassword(id, btn) {
+  const input = document.getElementById(id)
+  if (input.type === 'password') {
+    input.type = 'text'
+    btn.textContent = '🙈'
+  } else {
+    input.type = 'password'
+    btn.textContent = '👁️'
+  }
+}
 
 // Verificar se já está logado
 sb.auth.getSession().then(({ data: { session } }) => {
@@ -199,4 +219,3 @@ function showMsg(id, text, type) {
 </script>
 </body>
 </html>
-
