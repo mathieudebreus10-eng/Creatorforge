@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CreatorForge — Your Personal YouTube AI</title>
+<title>Tubervid — Your Personal YouTube AI</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
 
@@ -82,15 +82,9 @@
     -webkit-text-fill-color: transparent;
   }
 
-  .hero p {
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.6;
-  }
+  .hero p { color: var(--muted); font-size: 14px; line-height: 1.6; }
 
-  .input-section {
-    padding: 20px;
-  }
+  .input-section { padding: 20px; }
 
   .input-card {
     background: var(--surface);
@@ -123,10 +117,7 @@
     transition: border-color 0.2s;
   }
 
-  textarea:focus {
-    border-color: var(--accent);
-  }
-
+  textarea:focus { border-color: var(--accent); }
   textarea::placeholder { color: #555; }
 
   .selects-row {
@@ -134,6 +125,13 @@
     grid-template-columns: 1fr 1fr;
     gap: 10px;
     margin-top: 12px;
+  }
+
+  .selects-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
   }
 
   select {
@@ -190,10 +188,7 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .results {
-    display: none;
-    padding: 0 20px;
-  }
+  .results { display: none; padding: 0 20px; }
 
   .section-title {
     font-family: 'Space Grotesk', sans-serif;
@@ -216,9 +211,7 @@
     margin-bottom: 14px;
   }
 
-  .result-card.accent-border {
-    border-color: var(--accent);
-  }
+  .result-card.accent-border { border-color: var(--accent); }
 
   .title-item {
     background: var(--card);
@@ -260,9 +253,7 @@
 
   .hook-item:last-child { margin-bottom: 0; }
 
-  .script-section {
-    margin-bottom: 12px;
-  }
+  .script-section { margin-bottom: 12px; }
 
   .script-label {
     font-size: 11px;
@@ -282,11 +273,7 @@
     padding: 12px 14px;
   }
 
-  .hashtags-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+  .hashtags-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
 
   .hashtag {
     background: #1e1435;
@@ -298,17 +285,19 @@
     padding: 5px 12px;
   }
 
-  .description-text {
-    font-size: 14px;
-    line-height: 1.8;
-    color: #ccc;
+  .tag-item {
+    background: #0e1a2e;
+    border: 1px solid #1e3a5e;
+    border-radius: 20px;
+    color: #7dd3fc;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px;
   }
 
-  .thumbnail-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .description-text { font-size: 14px; line-height: 1.8; color: #ccc; }
+
+  .thumbnail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
   .thumb-item {
     background: var(--card);
@@ -325,17 +314,8 @@
     margin-bottom: 4px;
   }
 
-  .thumb-value {
-    font-size: 13px;
-    color: var(--text);
-    line-height: 1.5;
-  }
-
-  .thumb-emotion {
-    grid-column: 1 / -1;
-    background: linear-gradient(135deg, #1a0a2e, #0e1a2e);
-    border: 1px solid #3d2a6e;
-  }
+  .thumb-value { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .thumb-emotion { grid-column: 1 / -1; background: linear-gradient(135deg, #1a0a2e, #0e1a2e); border: 1px solid #3d2a6e; }
 
   .copy-btn {
     background: none;
@@ -351,17 +331,8 @@
     font-family: 'Inter', sans-serif;
   }
 
-  .copy-btn:active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-  }
-
-  .copy-btn.copied {
-    background: var(--green);
-    border-color: var(--green);
-    color: white;
-  }
+  .copy-btn:active { background: var(--accent); border-color: var(--accent); color: white; }
+  .copy-btn.copied { background: var(--green); border-color: var(--green); color: white; }
 
   .regenerate-btn {
     width: 100%;
@@ -377,10 +348,7 @@
     transition: all 0.2s;
   }
 
-  .regenerate-btn:active {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
+  .regenerate-btn:active { border-color: var(--accent); color: var(--accent); }
 
   .error-msg {
     background: #2a1020;
@@ -393,19 +361,16 @@
     display: none;
   }
 
-  .tap-hint {
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-    margin-top: 4px;
-  }
+  .tap-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
+
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
 </style>
 </head>
 <body>
 
 <header>
   <div>
-    <div class="logo">CreatorForge ✦</div>
+    <div class="logo">Tubervid ✦</div>
   </div>
   <div class="logo-badge">AI</div>
 </header>
@@ -418,7 +383,8 @@
 <div class="input-section">
   <div class="input-card">
     <div class="input-label">Your video topic</div>
-    <textarea id="topicInput" placeholder="Ex: 10 habits that changed my life, How to start investing, Best guitar tips for beginners..."></textarea>
+    <textarea id="topicInput" placeholder="Ex: 10 habits that changed my life, Como começar a investir, Best guitar tips for beginners..."></textarea>
+
     <div class="selects-row">
       <select id="nicheSelect">
         <option value="" disabled selected>Select your niche</option>
@@ -443,6 +409,22 @@
         <option value="Motivational">Motivational</option>
       </select>
     </div>
+
+    <div style="margin-top:10px">
+      <select id="languageSelect">
+        <option value="English">🇺🇸 English</option>
+        <option value="Portuguese">🇧🇷 Português</option>
+        <option value="Spanish">🇪🇸 Español</option>
+        <option value="French">🇫🇷 Français</option>
+        <option value="German">🇩🇪 Deutsch</option>
+        <option value="Italian">🇮🇹 Italiano</option>
+        <option value="Japanese">🇯🇵 日本語</option>
+        <option value="Korean">🇰🇷 한국어</option>
+        <option value="Arabic">🇸🇦 العربية</option>
+        <option value="Hindi">🇮🇳 हिन्दी</option>
+      </select>
+    </div>
+
     <button class="btn-generate" id="generateBtn" onclick="generate()">
       ✨ Generate Content
     </button>
@@ -460,41 +442,43 @@
 
 <div class="results" id="results">
 
-  <!-- TITLES -->
   <div class="result-card accent-border">
     <div class="section-title">🔥 Viral Titles</div>
     <div id="titlesContainer"></div>
     <p class="tap-hint" style="margin-top:8px">Tap a title to copy</p>
   </div>
 
-  <!-- HOOKS -->
   <div class="result-card">
     <div class="section-title">⚡ Opening Hooks</div>
     <div id="hooksContainer"></div>
   </div>
 
-  <!-- SCRIPT -->
   <div class="result-card">
     <div class="section-title">📝 Video Script</div>
     <div id="scriptContainer"></div>
-    <button class="copy-btn" onclick="copySection('scriptContainer')">Copy Full Script</button>
+    <button class="copy-btn" onclick="copySection('scriptContainer', this, 'Copy Full Script')">Copy Full Script</button>
   </div>
 
-  <!-- SEO DESCRIPTION -->
   <div class="result-card">
     <div class="section-title">🔍 SEO Description</div>
     <div class="description-text" id="descriptionContainer"></div>
-    <button class="copy-btn" onclick="copySection('descriptionContainer')">Copy Description</button>
+    <button class="copy-btn" onclick="copySection('descriptionContainer', this, 'Copy Description')">Copy Description</button>
   </div>
 
-  <!-- HASHTAGS -->
   <div class="result-card">
     <div class="section-title"># Hashtags</div>
     <div class="hashtags-wrap" id="hashtagsContainer"></div>
     <button class="copy-btn" onclick="copyHashtags()">Copy All Hashtags</button>
   </div>
 
-  <!-- THUMBNAIL -->
+  <!-- TAGS DO YOUTUBE -->
+  <div class="result-card">
+    <div class="section-title">🏷️ YouTube Tags</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Paste these in the YouTube Tags field when uploading your video</p>
+    <div class="tags-wrap" id="tagsContainer"></div>
+    <button class="copy-btn" onclick="copyTags()">Copy All Tags</button>
+  </div>
+
   <div class="result-card">
     <div class="section-title">🖼 Thumbnail Idea</div>
     <div class="thumbnail-grid" id="thumbnailContainer"></div>
@@ -509,11 +493,9 @@ async function generate() {
   const topic = document.getElementById('topicInput').value.trim();
   const niche = document.getElementById('nicheSelect').value;
   const tone = document.getElementById('toneSelect').value;
+  const language = document.getElementById('languageSelect').value;
 
-  if (!topic) {
-    showError('Please enter your video topic first.');
-    return;
-  }
+  if (!topic) { showError('Please enter your video topic first.'); return; }
 
   hideError();
   showLoading(true);
@@ -524,7 +506,7 @@ async function generate() {
     const response = await fetch('/.netlify/functions/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, niche, tone })
+      body: JSON.stringify({ topic, niche, tone, language })
     });
 
     const data = await response.json();
@@ -565,7 +547,7 @@ function renderResults(data) {
       <div class="script-text">${data.script.intro}</div>
     </div>
   `;
-  data.script.body.forEach((b, i) => {
+  data.script.body.forEach(b => {
     scriptHtml += `
       <div class="script-section">
         <div class="script-label">📌 ${b.section}</div>
@@ -587,6 +569,11 @@ function renderResults(data) {
   // Hashtags
   document.getElementById('hashtagsContainer').innerHTML =
     data.hashtags.map(h => `<span class="hashtag">${h}</span>`).join('');
+
+  // YouTube Tags
+  const tags = data.tags || [];
+  document.getElementById('tagsContainer').innerHTML =
+    tags.map(t => `<span class="tag-item">${t}</span>`).join('');
 
   // Thumbnail
   const th = data.thumbnail;
@@ -623,16 +610,12 @@ function copyText(text, el) {
   });
 }
 
-function copySection(id) {
+function copySection(id, btn, label) {
   const text = document.getElementById(id).innerText;
   navigator.clipboard.writeText(text).then(() => {
-    const btn = event.target;
     btn.textContent = '✓ Copied!';
     btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = btn.textContent.includes('Script') ? 'Copy Full Script' : 'Copy Description';
-      btn.classList.remove('copied');
-    }, 1500);
+    setTimeout(() => { btn.textContent = label; btn.classList.remove('copied'); }, 1500);
   });
 }
 
@@ -643,6 +626,16 @@ function copyHashtags() {
     btn.textContent = '✓ Copied!';
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = 'Copy All Hashtags'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function copyTags() {
+  const tags = [...document.querySelectorAll('.tag-item')].map(t => t.textContent).join(', ');
+  navigator.clipboard.writeText(tags).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy All Tags'; btn.classList.remove('copied'); }, 1500);
   });
 }
 
@@ -667,40 +660,12 @@ function hideError() {
 
 <!-- AI SUPPORT CHAT -->
 <style>
-.chat-bubble{
-  position:fixed;bottom:20px;right:20px;z-index:9999;
-  width:54px;height:54px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#9b59fc);
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:22px;border:none;
-  box-shadow:0 8px 28px rgba(124,92,252,0.5);
-  animation:pulse-ring 2.5s ease-in-out infinite;
-}
-@keyframes pulse-ring{
-  0%{box-shadow:0 0 0 0 rgba(124,92,252,0.5)}
-  70%{box-shadow:0 0 0 12px rgba(124,92,252,0)}
-  100%{box-shadow:0 0 0 0 rgba(124,92,252,0)}
-}
-.chat-notify{
-  position:absolute;top:-3px;right:-3px;
-  width:17px;height:17px;border-radius:50%;
-  background:#f43f5e;color:#fff;font-size:10px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-}
-.chat-window{
-  position:fixed;bottom:84px;right:16px;z-index:9999;
-  width:300px;max-height:440px;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:18px;overflow:hidden;
-  box-shadow:0 20px 50px rgba(0,0,0,0.7);
-  display:none;flex-direction:column;
-  font-family:'Inter',sans-serif;
-}
+.chat-bubble{position:fixed;bottom:20px;right:20px;z-index:9999;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9b59fc);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;border:none;box-shadow:0 8px 28px rgba(124,92,252,0.5);animation:pulse-ring 2.5s ease-in-out infinite;}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(124,92,252,0.5)}70%{box-shadow:0 0 0 12px rgba(124,92,252,0)}100%{box-shadow:0 0 0 0 rgba(124,92,252,0)}}
+.chat-notify{position:absolute;top:-3px;right:-3px;width:17px;height:17px;border-radius:50%;background:#f43f5e;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.chat-window{position:fixed;bottom:84px;right:16px;z-index:9999;width:300px;max-height:440px;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.7);display:none;flex-direction:column;font-family:'Inter',sans-serif;}
 .chat-window.open{display:flex}
-.chat-header{
-  background:linear-gradient(135deg,var(--accent),#9b59fc);
-  padding:12px 14px;display:flex;align-items:center;gap:10px;
-}
+.chat-header{background:linear-gradient(135deg,var(--accent),#9b59fc);padding:12px 14px;display:flex;align-items:center;gap:10px;}
 .chat-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;}
 .chat-hname{font-size:13px;font-weight:700;color:#fff}
 .chat-hstatus{font-size:10px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:4px}
@@ -731,12 +696,12 @@ function hideError() {
   <div class="chat-header">
     <div class="chat-avatar">🤖</div>
     <div>
-      <div class="chat-hname">CreatorForge Support</div>
+      <div class="chat-hname">Tubervid Support</div>
       <div class="chat-hstatus"><span class="sdot"></span> Online · Instant replies</div>
     </div>
   </div>
   <div class="chat-msgs" id="chatMsgs">
-    <div class="cmsg bot">Hey! 👋 Need help using CreatorForge? Ask me anything — I'm here 24/7!</div>
+    <div class="cmsg bot">Hey! 👋 Need help using Tubervid? Ask me anything in any language!</div>
   </div>
   <div class="csugg" id="csugg">
     <button class="csb" onclick="askQ('How do I generate content?')">How to generate?</button>
@@ -745,58 +710,66 @@ function hideError() {
     <button class="csb" onclick="askQ('Why did it show an error?')">Got an error?</button>
   </div>
   <div class="cinput-row">
-    <input class="cinput" id="cinput" placeholder="Type your question..." onkeydown="if(event.key==='Enter')sendC()">
+    <input class="cinput" id="cinput" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendC()">
     <button class="csend" onclick="sendC()">➤</button>
   </div>
 </div>
 
 <script>
+let chatHistory = [];
+
 function toggleChat(){
-  const w=document.getElementById('chatWindow');
+  const w = document.getElementById('chatWindow');
   w.classList.toggle('open');
-  document.getElementById('chatNotify').style.display='none';
+  document.getElementById('chatNotify').style.display = 'none';
 }
-function askQ(q){document.getElementById('cinput').value=q;sendC();}
-const cAnswers={
-  'how do i generate':'Type your video topic in the text box, select your niche and tone, then tap ✨ Generate Content. Results appear in about 5 seconds! 🚀',
-  'what niches':'CreatorForge works for ANY niche — Business, Fitness, Education, Faith, Finance, Gaming, Music, Travel, Tech, Lifestyle and more. Just select yours from the dropdown! 🎯',
-  'how do i copy':'Each section has a Copy button. For titles, just tap the title directly to copy it instantly! 📋',
-  'why did it show an error':'This usually means the AI service is temporarily unavailable. Wait a few seconds and try again. If it keeps happening, try refreshing the page. 🔄',
-  'how many':'You get 3 free generations per month. Upgrade to Basic ($9) for 20, Pro ($19) for 60, or Creator ($29) for unlimited! 💎',
-  'script':'Yes! Every generation includes a full script: Hook (0–15s), Intro, 3-part Body, and Outro. Copy it all with one tap! 📝',
-  'thumbnail':'The thumbnail section gives you a visual concept — background, main image, bold text overlay, and target emotion. Build it in Canva in minutes! 🖼',
-  'hashtag':'You get 10–15 hashtags per generation — a mix of broad and niche-specific. Tap "Copy All Hashtags" to grab them! #️⃣',
-  'default':'Great question! I\'m here to help with anything about CreatorForge. Could you tell me more about what you need? 😊'
-};
-function getCReply(msg){
-  const m=msg.toLowerCase();
-  for(const[k,v] of Object.entries(cAnswers)){
-    if(k!=='default'&&m.includes(k))return v;
+
+function askQ(q){ document.getElementById('cinput').value = q; sendC(); }
+
+async function getCReply(msg) {
+  try {
+    const response = await fetch('/.netlify/functions/chat-support', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, history: chatHistory })
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    chatHistory.push({ role: 'user', content: msg });
+    chatHistory.push({ role: 'assistant', content: data.reply });
+    return data.reply;
+  } catch(err) {
+    return "Sorry, I'm having trouble right now. Email us at tubervidcontact@gmail.com! 😊";
   }
-  return cAnswers['default'];
 }
-function sendC(){
-  const inp=document.getElementById('cinput');
-  const msg=inp.value.trim();
-  if(!msg)return;
-  inp.value='';
-  document.getElementById('csugg').style.display='none';
-  addCMsg(msg,'user');
-  const t=document.createElement('div');
-  t.className='cmsg bot';t.id='ctyping';
-  t.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+async function sendC(){
+  const inp = document.getElementById('cinput');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  document.getElementById('csugg').style.display = 'none';
+  addCMsg(msg, 'user');
+  const t = document.createElement('div');
+  t.className = 'cmsg bot'; t.id = 'ctyping';
+  t.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
   document.getElementById('chatMsgs').appendChild(t);
   scrollC();
-  setTimeout(()=>{document.getElementById('ctyping')?.remove();addCMsg(getCReply(msg),'bot');},1100);
+  const reply = await getCReply(msg);
+  document.getElementById('ctyping')?.remove();
+  addCMsg(reply, 'bot');
 }
-function addCMsg(text,type){
-  const m=document.getElementById('chatMsgs');
-  const d=document.createElement('div');
-  d.className=`cmsg ${type}`;
-  d.innerHTML=text.replace(/\n/g,'<br>');
-  m.appendChild(d);scrollC();
+
+function addCMsg(text, type){
+  const m = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.className = `cmsg ${type}`;
+  d.innerHTML = text.replace(/\n/g, '<br>');
+  m.appendChild(d);
+  scrollC();
 }
-function scrollC(){const m=document.getElementById('chatMsgs');m.scrollTop=m.scrollHeight;}
+
+function scrollC(){ const m = document.getElementById('chatMsgs'); m.scrollTop = m.scrollHeight; }
 </script>
 </body>
 </html>
