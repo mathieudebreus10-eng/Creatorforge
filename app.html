@@ -484,6 +484,73 @@
     <div class="thumbnail-grid" id="thumbnailContainer"></div>
   </div>
 
+  <!-- THUMBNAIL GENERATOR -->
+  <div class="result-card" id="thumbnailGenCard" style="display:none">
+    <div class="section-title">🎨 Generate Thumbnail</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Create a professional thumbnail automatically with AI or upload your own photo</p>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <button onclick="setThumbMode('ai')" id="modeAI" style="background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:12px;cursor:pointer">🤖 Generate with AI</button>
+      <button onclick="setThumbMode('upload')" id="modeUpload" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:13px;font-weight:700;padding:12px;cursor:pointer">📸 Upload My Photo</button>
+    </div>
+
+    <div id="uploadArea" style="display:none;margin-bottom:14px">
+      <label style="display:block;background:var(--card);border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer">
+        <div style="font-size:32px;margin-bottom:8px">📸</div>
+        <div style="font-size:13px;color:var(--muted)">Tap to upload your photo</div>
+        <div style="font-size:11px;color:#555;margin-top:4px">JPG, PNG — max 5MB</div>
+        <input type="file" id="photoUpload" accept="image/*" style="display:none" onchange="previewUpload(this)">
+      </label>
+      <div id="uploadPreview" style="margin-top:10px;display:none">
+        <img id="previewImg" style="width:100%;border-radius:10px;max-height:200px;object-fit:cover">
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text on thumbnail</div>
+      <input id="thumbText" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:14px;padding:12px;outline:none" placeholder="Ex: CHANGED MY LIFE">
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Format</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="setFormat('horizontal')" id="fmtH" style="background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:11px;cursor:pointer">📺 Horizontal<br><span style="font-size:10px;font-weight:400;opacity:0.8">16:9 · YouTube</span></button>
+        <button onclick="setFormat('vertical')" id="fmtV" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:13px;font-weight:700;padding:11px;cursor:pointer">📱 Vertical<br><span style="font-size:10px;font-weight:400;opacity:0.8">9:16 · Shorts</span></button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Style</div>
+      <select id="thumbStyle" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;padding:10px;outline:none">
+        <option value="cinematic, high contrast, vibrant colors">🎬 Cinematic</option>
+        <option value="dark dramatic, moody lighting, professional">🌑 Dark & Dramatic</option>
+        <option value="bright colorful, energetic, fun">☀️ Bright & Colorful</option>
+        <option value="minimalist, clean, professional">✨ Minimalist</option>
+        <option value="faith inspired, heavenly light, spiritual">✝️ Faith & Gospel</option>
+        <option value="luxury lifestyle, premium, aspirational">💎 Luxury</option>
+      </select>
+    </div>
+
+    <button onclick="generateThumbnail()" id="thumbGenBtn" style="width:100%;background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:12px;color:#fff;font-family:Space Grotesk,sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      🎨 Create Thumbnail
+    </button>
+
+    <div id="thumbLoading" style="display:none;text-align:center;padding:20px;color:var(--muted);font-size:13px">
+      <div style="width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div>
+      Creating your thumbnail... (~15 seconds)
+    </div>
+
+    <div id="thumbError" style="display:none;background:#2a1020;border:1px solid #5a2040;border-radius:10px;color:#f87171;font-size:13px;padding:12px;margin-top:10px;text-align:center"></div>
+
+    <div id="thumbResult" style="display:none;margin-top:14px">
+      <img id="thumbImage" style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <button onclick="downloadThumbnail()" style="background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:11px;cursor:pointer">⬇️ Download</button>
+        <button onclick="generateThumbnail()" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:13px;font-weight:600;padding:11px;cursor:pointer">↻ Try Again</button>
+      </div>
+    </div>
+  </div>
+
   <button class="regenerate-btn" onclick="generate()">↻ Generate Again</button>
 
 </div>
@@ -595,6 +662,11 @@ function renderResults(data) {
       <div class="thumb-value" style="color:var(--accent2)">${th.emotion}</div>
     </div>
   `;
+
+  // Show thumbnail generator and populate with concept data
+  currentThumbConcept = data.thumbnail;
+  document.getElementById('thumbText').value = data.thumbnail.text_overlay || '';
+  document.getElementById('thumbnailGenCard').style.display = 'block';
 
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
@@ -771,5 +843,121 @@ function addCMsg(text, type){
 
 function scrollC(){ const m = document.getElementById('chatMsgs'); m.scrollTop = m.scrollHeight; }
 </script>
+
+<script>
+// THUMBNAIL GENERATOR
+let thumbMode = 'ai';
+let thumbFormat = 'horizontal';
+let currentThumbConcept = {};
+
+function setFormat(fmt) {
+  thumbFormat = fmt;
+  document.getElementById('fmtH').style.background = fmt === 'horizontal' ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
+  document.getElementById('fmtH').style.border = fmt === 'horizontal' ? 'none' : '1px solid var(--border)';
+  document.getElementById('fmtH').style.color = fmt === 'horizontal' ? '#fff' : 'var(--light)';
+  document.getElementById('fmtV').style.background = fmt === 'vertical' ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
+  document.getElementById('fmtV').style.border = fmt === 'vertical' ? 'none' : '1px solid var(--border)';
+  document.getElementById('fmtV').style.color = fmt === 'vertical' ? '#fff' : 'var(--light)';
+}
+
+function setThumbMode(mode) {
+  thumbMode = mode;
+  document.getElementById('uploadArea').style.display = mode === 'upload' ? 'block' : 'none';
+  document.getElementById('modeAI').style.background = mode === 'ai' ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
+  document.getElementById('modeAI').style.border = mode === 'ai' ? 'none' : '1px solid var(--border)';
+  document.getElementById('modeAI').style.color = mode === 'ai' ? '#fff' : 'var(--light)';
+  document.getElementById('modeUpload').style.background = mode === 'upload' ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
+  document.getElementById('modeUpload').style.border = mode === 'upload' ? 'none' : '1px solid var(--border)';
+  document.getElementById('modeUpload').style.color = mode === 'upload' ? '#fff' : 'var(--light)';
+}
+
+function previewUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File too large. Max 5MB.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('uploadPreview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function generateThumbnail() {
+  const text = document.getElementById('thumbText').value.trim() || currentThumbConcept.text_overlay || 'YOUR TITLE';
+  const style = document.getElementById('thumbStyle').value;
+  
+  document.getElementById('thumbLoading').style.display = 'block';
+  document.getElementById('thumbResult').style.display = 'none';
+  document.getElementById('thumbError').style.display = 'none';
+  document.getElementById('thumbGenBtn').disabled = true;
+
+  try {
+    let body = {
+      concept: currentThumbConcept.main_image || 'professional YouTube creator',
+      text_overlay: text,
+      emotion: currentThumbConcept.emotion || 'excitement',
+      background: currentThumbConcept.background || 'dark gradient',
+      style: style,
+      format: thumbFormat
+    };
+
+    if (thumbMode === 'upload') {
+      const file = document.getElementById('photoUpload').files[0];
+      if (!file) {
+        document.getElementById('thumbError').textContent = 'Please upload a photo first!';
+        document.getElementById('thumbError').style.display = 'block';
+        document.getElementById('thumbLoading').style.display = 'none';
+        document.getElementById('thumbGenBtn').disabled = false;
+        return;
+      }
+      const base64 = await fileToBase64(file);
+      body.imageBase64 = base64;
+    }
+
+    const response = await fetch('/.netlify/functions/thumbnail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById('thumbImage').src = data.imageUrl;
+    document.getElementById('thumbResult').style.display = 'block';
+
+  } catch (err) {
+    document.getElementById('thumbError').textContent = 'Error generating thumbnail. Please try again.';
+    document.getElementById('thumbError').style.display = 'block';
+  } finally {
+    document.getElementById('thumbLoading').style.display = 'none';
+    document.getElementById('thumbGenBtn').disabled = false;
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function downloadThumbnail() {
+  const img = document.getElementById('thumbImage');
+  const url = img.src;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tubervid-thumbnail.jpg';
+  a.target = '_blank';
+  a.click();
+}
+</script>
 </body>
 </html>
+
