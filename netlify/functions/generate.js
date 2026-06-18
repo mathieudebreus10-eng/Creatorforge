@@ -7,16 +7,42 @@ exports.handler = async function(event, context) {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const lang = language || 'English';
 
-  const prompt = `You are an expert YouTube content strategist.
+  const prompt = `You are a world-class YouTube growth strategist and viral content expert with 10+ years experience helping creators grow to millions of subscribers.
 
 Video topic: "${topic}"
 Niche: ${niche || 'General'}
 Tone: ${tone || 'Inspirational'}
 Language: ${lang} — write ALL content in ${lang}.
 
+Your goal: Create content that gets MAXIMUM clicks, watch time, and shares.
+
+TITLE RULES — each title must use one of these proven viral formulas:
+- Curiosity gap: "The Secret Nobody Tells You About..."
+- Number list: "7 Things That Will Change Your..."
+- Personal story: "I Did X for 30 Days — Here's What Happened"
+- Controversy: "Why Everyone Is Wrong About..."
+- Result promise: "How I [Result] in [Time] Without [Pain Point]"
+- Shocking truth: "The Real Reason Why..."
+
+HOOK RULES — first 15 seconds must:
+- Start with a shocking statement, question, or bold claim
+- Create immediate curiosity or emotional tension
+- Promise a clear benefit or transformation
+
+SCRIPT RULES:
+- Hook must stop the scroll in 3 seconds
+- Intro must build credibility and promise value
+- Body must deliver on the promise with specific, actionable content
+- Outro must drive action (subscribe, comment, share)
+
+SEO DESCRIPTION RULES:
+- First sentence must contain the main keyword
+- Include a clear call to action
+- 150-200 words with natural keyword placement
+
 Respond with ONLY raw JSON, no markdown, no backticks:
 
-{"titles":["title1","title2","title3","title4","title5"],"hooks":["hook1","hook2","hook3"],"seo_description":"120-200 word SEO description","hashtags":["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"],"script":{"hook":"hook text","intro":"intro text","body":[{"section":"Point 1","content":"content"},{"section":"Point 2","content":"content"},{"section":"Point 3","content":"content"}],"outro":"outro text"},"thumbnail":{"background":"bg","main_image":"image","text_overlay":"3-4 WORDS","emotion":"emotion"}}`;
+{"titles":["viral title 1","viral title 2","viral title 3","viral title 4","viral title 5"],"hooks":["powerful hook 1","powerful hook 2","powerful hook 3"],"seo_description":"150-200 word SEO description","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],"script":{"hook":"Powerful 15-second hook script that stops the scroll","intro":"30-60 second intro that builds credibility and promises value","body":[{"section":"Key Point 1 with specific detail","content":"Detailed, engaging script content with examples"},{"section":"Key Point 2 with specific detail","content":"Detailed, engaging script content with examples"},{"section":"Key Point 3 with specific detail","content":"Detailed, engaging script content with examples"}],"outro":"Strong call to action — subscribe, comment, share"},"thumbnail":{"background":"Specific background that creates contrast and emotion","main_image":"Specific visual element that creates curiosity","text_overlay":"3-4 WORD HOOK","emotion":"Specific emotion that drives clicks"}}`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -27,10 +53,10 @@ Respond with ONLY raw JSON, no markdown, no backticks:
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 2000,
-        temperature: 0.7,
+        max_tokens: 2500,
+        temperature: 0.85,
         messages: [
-          { role: 'system', content: 'You are a YouTube content expert. Output raw JSON only. No markdown. No backticks.' },
+          { role: 'system', content: 'You are a world-class YouTube viral content expert. You create titles and scripts that consistently get millions of views. Output raw JSON only. No markdown. No backticks.' },
           { role: 'user', content: prompt }
         ]
       })
@@ -43,16 +69,15 @@ Respond with ONLY raw JSON, no markdown, no backticks:
     const clean = text.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
 
-    // Gerar tags a partir das hashtags — simples e garantido
+    // Gerar tags a partir das hashtags
     result.tags = (result.hashtags || [])
       .map(h => h.replace(/#/g, '').trim())
       .filter(t => t.length > 0);
 
-    // Adicionar palavras do tópico como tags extras
     const topicTags = topic.split(' ')
       .map(w => w.trim().toLowerCase())
       .filter(w => w.length > 3);
-    
+
     result.tags = [...new Set([...result.tags, ...topicTags])].slice(0, 15);
 
     return {
@@ -68,4 +93,3 @@ Respond with ONLY raw JSON, no markdown, no backticks:
     };
   }
 };
-
