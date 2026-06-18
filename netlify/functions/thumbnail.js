@@ -15,21 +15,20 @@ exports.handler = async function(event, context) {
   const formatLabel = format === 'vertical' ? 'vertical 9:16 YouTube Shorts' : 'horizontal 16:9 YouTube';
 
   try {
-    // Use custom prompt if provided, otherwise build from concept data
     let prompt;
     if (customPrompt && customPrompt.trim().length > 0) {
-      prompt = `Professional ${formatLabel} YouTube thumbnail. ${customPrompt}. 
+      // Clean and safe version of custom prompt
+      prompt = `Professional ${formatLabel} YouTube thumbnail image.
+Visual description: ${customPrompt}.
 Style: ${style || 'cinematic, high contrast, vibrant colors'}.
-No text or letters in the image. Ultra sharp, professional YouTube thumbnail quality, eye-catching, designed to maximize clicks.`;
+Requirements: photorealistic, ultra sharp, high contrast, professional lighting, no text, no letters, no words anywhere in the image. Designed to maximize YouTube clicks.`;
     } else {
-      prompt = `Professional ${formatLabel} YouTube thumbnail, ultra high quality, eye-catching.
-Style: ${style || 'cinematic, high contrast, vibrant colors'}.
+      prompt = `Professional ${formatLabel} YouTube thumbnail image.
 Background: ${background}.
-Main visual element: ${concept}.
-Target emotion: ${emotion}.
-Leave a clear area for text overlay "${text_overlay}".
-No text, no letters, no words in the image itself.
-Sharp, professional, high contrast, designed to get maximum clicks on YouTube.`;
+Main subject: ${concept}.
+Mood and emotion: ${emotion}.
+Style: ${style || 'cinematic, high contrast, vibrant colors'}.
+Requirements: photorealistic, ultra sharp, high contrast, professional lighting, no text, no letters, no words anywhere in the image. Leave space for text overlay. Designed to maximize YouTube clicks.`;
     }
 
     const response = await fetch('https://api.openai.com/v1/images/generations', {
@@ -48,7 +47,19 @@ Sharp, professional, high contrast, designed to get maximum clicks on YouTube.`;
     });
 
     const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
+    
+    if (data.error) {
+      // Return specific error message
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          error: data.error.code === 'content_policy_violation' 
+            ? 'Try describing the image differently — avoid specific names or sensitive words.'
+            : data.error.message 
+        })
+      };
+    }
 
     return {
       statusCode: 200,
@@ -59,7 +70,7 @@ Sharp, professional, high contrast, designed to get maximum clicks on YouTube.`;
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message })
+      body: JSON.stringify({ error: 'Generation failed. Please try again with a different description.' })
     };
   }
 };
