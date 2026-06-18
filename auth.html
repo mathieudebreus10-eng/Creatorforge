@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tubervid — Login</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06060f;--s1:#0d0d1a;--card:#16162a;--border:#232340;
+  --p:#7c5cfc;--p2:#c084fc;--text:#f0f0fc;--muted:#7a7a9a;--green:#22c55e;--red:#f87171;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800;background:linear-gradient(90deg,var(--p),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:8px}
+.tagline{color:var(--muted);font-size:14px;text-align:center;margin-bottom:32px}
+.auth-card{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:380px}
+.tabs{display:flex;gap:0;margin-bottom:24px;background:var(--bg);border-radius:10px;padding:4px}
+.tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);transition:all 0.2s}
+.tab.active{background:var(--p);color:#fff}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;display:block}
+.form-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:15px;padding:13px 16px;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:var(--p)}
+.form-input::placeholder{color:#444}
+.btn{width:100%;background:linear-gradient(135deg,var(--p),#9b59fc);border:none;border-radius:12px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;padding:15px;cursor:pointer;margin-top:8px;transition:opacity 0.2s}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.msg{border-radius:10px;padding:12px 16px;font-size:13px;margin-top:12px;display:none;text-align:center}
+.msg.error{background:#2a1020;border:1px solid #5a2040;color:var(--red)}
+.msg.success{background:#0a2a1a;border:1px solid #1a5a2a;color:var(--green)}
+.password-wrap{position:relative}
+.password-wrap .form-input{padding-right:44px}
+.eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;line-height:1}
+</style>
+</head>
+<body>
+
+<div class="logo">Tubervid ✦</div>
+<p class="tagline">Your Personal YouTube AI Agent</p>
+
+<div class="auth-card">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('login')">Sign In</div>
+    <div class="tab" onclick="switchTab('signup')">Sign Up</div>
+  </div>
+
+  <!-- LOGIN FORM -->
+  <div id="loginForm">
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="loginEmail" placeholder="your@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="password-wrap">
+        <input class="form-input" type="password" id="loginPassword" placeholder="••••••••">
+        <button class="eye-btn" type="button" onclick="togglePassword('loginPassword', this)">👁️</button>
+      </div>
+    </div>
+    <button class="btn" onclick="handleLogin()" id="loginBtn">Sign In →</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <div id="signupForm" style="display:none">
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input class="form-input" type="text" id="signupName" placeholder="Your name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="signupEmail" placeholder="your@email.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="password-wrap">
+        <input class="form-input" type="password" id="signupPassword" placeholder="Min 6 characters">
+        <button class="eye-btn" type="button" onclick="togglePassword('signupPassword', this)">👁️</button>
+      </div>
+    </div>
+    <button class="btn" onclick="handleSignup()" id="signupBtn">Create Free Account →</button>
+    <div class="msg" id="signupMsg"></div>
+  </div>
+</div>
+
+<p style="color:var(--muted);font-size:12px;text-align:center;margin-top:20px;line-height:1.6">By signing up, you agree to our Terms of Service.<br>No credit card required for free plan.</p>
+
+<script>
+const SUPABASE_URL = 'https://fvnjoaedwuwtuiulqhcw.supabase.co'
+const SUPABASE_KEY = 'sb_publishable_-yEONjxLyxpHBM1QDRe4Zw_a3QTiH5b'
+
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) window.location.href = 'app.html'
+})
+
+function togglePassword(id, btn) {
+  const input = document.getElementById(id)
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈' }
+  else { input.type = 'password'; btn.textContent = '👁️' }
+}
+
+function switchTab(tab) {
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none'
+  document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none'
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1))
+  })
+}
+
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim()
+  const password = document.getElementById('loginPassword').value
+  const btn = document.getElementById('loginBtn')
+  if (!email || !password) { showMsg('loginMsg', 'Please fill in all fields.', 'error'); return }
+  btn.disabled = true; btn.textContent = 'Signing in...'
+  const { error } = await sb.auth.signInWithPassword({ email, password })
+  if (error) {
+    showMsg('loginMsg', error.message, 'error')
+    btn.disabled = false; btn.textContent = 'Sign In →'
+  } else {
+    showMsg('loginMsg', '✓ Success! Redirecting...', 'success')
+    setTimeout(() => window.location.href = 'app.html', 1000)
+  }
+}
+
+async function handleSignup() {
+  const name = document.getElementById('signupName').value.trim()
+  const email = document.getElementById('signupEmail').value.trim()
+  const password = document.getElementById('signupPassword').value
+  const btn = document.getElementById('signupBtn')
+  if (!name || !email || !password) { showMsg('signupMsg', 'Please fill in all fields.', 'error'); return }
+  if (password.length < 6) { showMsg('signupMsg', 'Password must be at least 6 characters.', 'error'); return }
+  btn.disabled = true; btn.textContent = 'Creating account...'
+  const { error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: name, plan: 'free', generations_used: 0 } }
+  })
+  if (error) {
+    showMsg('signupMsg', error.message, 'error')
+    btn.disabled = false; btn.textContent = 'Create Free Account →'
+  } else {
+    showMsg('signupMsg', '✓ Account created! Check your email to confirm.', 'success')
+    btn.textContent = 'Check your email ✓'
+  }
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id)
+  el.textContent = text
+  el.className = `msg ${type}`
+  el.style.display = 'block'
+}
+</script>
+</body>
+</html>
