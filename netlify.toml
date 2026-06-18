@@ -7,44 +7,22 @@ exports.handler = async function(event, context) {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const lang = language || 'English';
 
-  const prompt = `You are an expert YouTube content strategist.
+  const prompt = `You are an expert YouTube content strategist. Generate a complete YouTube content package.
 
 Video topic: "${topic}"
 Niche: ${niche || 'General'}
 Tone: ${tone || 'Inspirational'}
-Output language: ${lang} — write ALL content in ${lang}.
+Language: ${lang}
 
-Return ONLY valid JSON. No markdown. No extra text. Every field is REQUIRED — do not skip any field.
+CRITICAL: Respond with ONLY a JSON object. No markdown. No explanation. Just the raw JSON.
 
-{
-  "titles": ["title1","title2","title3","title4","title5"],
-  "hooks": ["hook1","hook2","hook3"],
-  "seo_description": "120-200 word SEO description",
-  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"],
-  "tags": ["keyword1","keyword2","keyword3","keyword4","keyword5","keyword6","keyword7","keyword8","keyword9","keyword10","keyword11","keyword12","keyword13","keyword14","keyword15"],
-  "script": {
-    "hook": "First 15 seconds script",
-    "intro": "30-45 seconds intro",
-    "body": [
-      {"section":"Point 1","content":"Script content"},
-      {"section":"Point 2","content":"Script content"},
-      {"section":"Point 3","content":"Script content"}
-    ],
-    "outro": "Closing 30 seconds"
-  },
-  "thumbnail": {
-    "background": "Background description",
-    "main_image": "Main visual element",
-    "text_overlay": "Bold 3-4 word text",
-    "emotion": "Target emotion"
-  }
-}
+{"titles":["title1","title2","title3","title4","title5"],"hooks":["hook1","hook2","hook3"],"seo_description":"120-200 word SEO description in ${lang}","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],"tags":["keyword 1","keyword 2","keyword 3","keyword 4","keyword 5","keyword 6","keyword 7","keyword 8","keyword 9","keyword 10","keyword 11","keyword 12","keyword 13","keyword 14","keyword 15"],"script":{"hook":"hook text","intro":"intro text","body":[{"section":"Point 1","content":"content"},{"section":"Point 2","content":"content"},{"section":"Point 3","content":"content"}],"outro":"outro text"},"thumbnail":{"background":"bg description","main_image":"image description","text_overlay":"3-4 WORDS","emotion":"target emotion"}}
 
-IMPORTANT RULES:
-- "hashtags" array: each item MUST start with # symbol
-- "tags" array: 15 plain keyword phrases, NO # symbol, these are YouTube backend search tags
-- ALL text must be written in ${lang}
-- Do NOT skip the "tags" field — it is required`;
+Rules:
+- Write all content in ${lang}
+- hashtags: must start with #
+- tags: 15 plain keywords WITHOUT # for YouTube's tag field
+- All fields required`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -58,7 +36,7 @@ IMPORTANT RULES:
         max_tokens: 2500,
         temperature: 0.7,
         messages: [
-          { role: 'system', content: 'You are an expert YouTube content strategist. Always respond with valid JSON only. Every field in the schema is required and must be included.' },
+          { role: 'system', content: `You are a YouTube content expert. You ONLY output raw JSON with no markdown, no backticks, no explanation. Every field is mandatory including the "tags" array with 15 keywords.` },
           { role: 'user', content: prompt }
         ]
       })
@@ -66,21 +44,25 @@ IMPORTANT RULES:
 
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
+
     const text = data.choices[0].message.content;
     const clean = text.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
 
-    // Garantir que tags existe mesmo que a IA esqueça ou retorne vazio
+    // Fallback robusto para tags
     if (!result.tags || !Array.isArray(result.tags) || result.tags.length === 0) {
-      // Gerar tags a partir do tópico e hashtags
+      const fromHashtags = (result.hashtags || []).map(h => h.replace(/#/g, '').trim());
       const topicWords = topic.split(' ').filter(w => w.length > 2);
-      const fromHashtags = (result.hashtags || []).map(h => h.replace('#', ''));
-      result.tags = [...new Set([...topicWords, ...fromHashtags])].slice(0, 15);
+      const nicheTag = niche ? [niche] : [];
+      result.tags = [...new Set([...fromHashtags, ...topicWords, ...nicheTag])].slice(0, 15);
     }
+
+    // Remover # das tags caso a IA tenha colocado
+    result.tags = result.tags.map(t => t.replace(/#/g, '').trim()).filter(t => t.length > 0);
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify(result)
     };
   } catch (err) {
