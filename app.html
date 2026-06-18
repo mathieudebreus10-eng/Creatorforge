@@ -507,6 +507,12 @@
     </div>
 
     <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Describe your thumbnail <span style="color:#555;font-weight:400">(optional)</span></div>
+      <textarea id="thumbPrompt" rows="3" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;padding:12px;outline:none;resize:none" placeholder="Ex: A woman singing gospel in a church with heavenly light, dramatic and emotional, golden tones..."></textarea>
+      <div style="font-size:10px;color:#555;margin-top:4px">Leave empty to use the AI-generated concept automatically</div>
+    </div>
+
+    <div style="margin-bottom:14px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text on thumbnail</div>
       <input id="thumbText" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:14px;padding:12px;outline:none" placeholder="Ex: CHANGED MY LIFE">
     </div>
@@ -896,13 +902,16 @@ async function generateThumbnail() {
   document.getElementById('thumbGenBtn').disabled = true;
 
   try {
+    const customPrompt = document.getElementById('thumbPrompt').value.trim();
+
     let body = {
-      concept: currentThumbConcept.main_image || 'professional YouTube creator',
+      concept: customPrompt || currentThumbConcept.main_image || 'professional YouTube creator',
       text_overlay: text,
       emotion: currentThumbConcept.emotion || 'excitement',
-      background: currentThumbConcept.background || 'dark gradient',
+      background: customPrompt ? 'cinematic background' : (currentThumbConcept.background || 'dark gradient'),
       style: style,
-      format: thumbFormat
+      format: thumbFormat,
+      customPrompt: customPrompt
     };
 
     if (thumbMode === 'upload') {
@@ -960,4 +969,3 @@ async function downloadThumbnail() {
 </script>
 </body>
 </html>
-
