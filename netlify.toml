@@ -70,9 +70,12 @@ IMPORTANT RULES:
     const clean = text.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
 
-    // Garantir que tags existe mesmo que a IA esqueça
-    if (!result.tags || result.tags.length === 0) {
-      result.tags = result.hashtags.map(h => h.replace('#', ''));
+    // Garantir que tags existe mesmo que a IA esqueça ou retorne vazio
+    if (!result.tags || !Array.isArray(result.tags) || result.tags.length === 0) {
+      // Gerar tags a partir do tópico e hashtags
+      const topicWords = topic.split(' ').filter(w => w.length > 2);
+      const fromHashtags = (result.hashtags || []).map(h => h.replace('#', ''));
+      result.tags = [...new Set([...topicWords, ...fromHashtags])].slice(0, 15);
     }
 
     return {
