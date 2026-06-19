@@ -514,6 +514,10 @@
 
     <div style="margin-bottom:14px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text on thumbnail</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <button onclick="setIncludeText(false)" id="textOff" style="background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:10px;cursor:pointer">🖼 No Text<br><span style="font-size:10px;font-weight:400;opacity:0.8">Clean image</span></button>
+        <button onclick="setIncludeText(true)" id="textOn" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:12px;font-weight:700;padding:10px;cursor:pointer">🔤 With Text<br><span style="font-size:10px;font-weight:400;opacity:0.8">Baked into image</span></button>
+      </div>
       <input id="thumbText" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:14px;padding:12px;outline:none" placeholder="Ex: CHANGED MY LIFE">
     </div>
 
@@ -550,7 +554,7 @@
     <div id="thumbError" style="display:none;background:#2a1020;border:1px solid #5a2040;border-radius:10px;color:#f87171;font-size:13px;padding:12px;margin-top:10px;text-align:center"></div>
 
     <div id="thumbResult" style="display:none;margin-top:14px">
-      <img id="thumbImage" style="width:100%;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+      <img id="thumbImage" style="width:100%;height:auto;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);display:block;object-fit:contain;background:#000">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
         <button onclick="downloadThumbnail()" style="background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:11px;cursor:pointer">⬇️ Download</button>
         <button onclick="generateThumbnail()" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:13px;font-weight:600;padding:11px;cursor:pointer">↻ Try Again</button>
@@ -855,7 +859,18 @@ function scrollC(){ const m = document.getElementById('chatMsgs'); m.scrollTop =
 // THUMBNAIL GENERATOR
 let thumbMode = 'ai';
 let thumbFormat = 'horizontal';
+let includeText = false;
 let currentThumbConcept = {};
+
+function setIncludeText(val) {
+  includeText = val;
+  document.getElementById('textOff').style.background = !val ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
+  document.getElementById('textOff').style.border = !val ? 'none' : '1px solid var(--border)';
+  document.getElementById('textOff').style.color = !val ? '#fff' : 'var(--light)';
+  document.getElementById('textOn').style.background = val ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
+  document.getElementById('textOn').style.border = val ? 'none' : '1px solid var(--border)';
+  document.getElementById('textOn').style.color = val ? '#fff' : 'var(--light)';
+}
 
 function setFormat(fmt) {
   thumbFormat = fmt;
@@ -919,7 +934,8 @@ async function generateThumbnail() {
       background: customPrompt ? 'cinematic background' : (currentThumbConcept.background || 'dark gradient'),
       style: style,
       format: thumbFormat,
-      customPrompt: customPrompt
+      customPrompt: customPrompt,
+      includeText: includeText
     };
 
     if (thumbMode === 'upload') {
@@ -977,3 +993,4 @@ async function downloadThumbnail() {
 </script>
 </body>
 </html>
+
