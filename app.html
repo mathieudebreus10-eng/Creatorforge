@@ -940,7 +940,7 @@ async function generateThumbnail() {
     document.getElementById('thumbResult').style.display = 'block';
 
   } catch (err) {
-    document.getElementById('thumbError').textContent = 'Error generating thumbnail. Please try again.';
+    document.getElementById('thumbError').textContent = err.message || 'Error generating thumbnail. Please try again.';
     document.getElementById('thumbError').style.display = 'block';
   } finally {
     document.getElementById('thumbLoading').style.display = 'none';
