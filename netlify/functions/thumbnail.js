@@ -34,47 +34,40 @@ exports.handler = async function(event, context) {
       imageBase64 = null
     } = body;
 
-    // 🚀 FIXED: proper YouTube + SaaS sizes
-    let size = '1280x720'; // default YouTube thumbnail (16:9)
+    // ✅ FIX: valid OpenAI sizes only
+    let size = '1536x1024'; // horizontal safe
 
-    if (format === 'vertical') size = '1024x1792';   // Shorts / TikTok
-    if (format === 'square') size = '1024x1024';     // profile / logo
-    if (format === 'horizontal') size = '1280x720';  // YouTube thumbnail
+    if (format === 'vertical') size = '1024x1536';
+    if (format === 'square') size = '1024x1024';
+    if (format === 'horizontal') size = '1536x1024';
 
-    // Format context optimized
     const formatContext =
       format === 'square'
         ? 'Clean professional profile image, centered composition, minimal and iconic'
         : 'High CTR YouTube thumbnail composition, cinematic, eye-catching, viral design, strong focal subject';
 
-    // Visual description
     const visualDescription =
       customPrompt.length > 0
         ? customPrompt
         : `${concept}. Background: ${background}. Mood: ${emotion}`;
 
-    // Text handling (improved CTR logic)
     const textInstruction =
       includeText && text_overlay.trim().length > 0
-        ? ` Add bold, highly readable text: "${text_overlay}". Ensure strong contrast, safe margins, and mobile readability.`
+        ? ` Add bold, highly readable text: "${text_overlay}". Ensure strong contrast and mobile readability.`
         : ' No text, no letters, no words in the image. Clean visual only.';
 
-    // 🚀 Improved CTR prompt (IMPORTANT UPGRADE)
     const finalPrompt = `
 ${formatContext}.
 ${visualDescription}.
 Style: ${style}.
 ${textInstruction}
 Professional lighting, ultra sharp focus, rule of thirds composition,
-subject clearly separated from background, strong contrast,
-designed for high click-through rate on YouTube,
-mobile-first readability, cinematic depth, 8k detail.
+strong contrast, cinematic depth, 8k detail, YouTube viral thumbnail style.
 `;
 
     let apiResponse;
 
     if (imageBase64) {
-      // EDIT MODE
       const parsed = parseBase64Image(imageBase64);
 
       if (!parsed) {
@@ -84,22 +77,11 @@ mobile-first readability, cinematic depth, 8k detail.
       const boundary = '----TubervidBoundary' + Date.now();
       const parts = [];
 
-      parts.push(Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\ngpt-image-1\r\n`
-      ));
+      parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\ngpt-image-1\r\n`));
+      parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${finalPrompt}\r\n`));
+      parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="size"\r\n\r\n${size}\r\n`));
 
-      parts.push(Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${finalPrompt}\r\n`
-      ));
-
-      parts.push(Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="size"\r\n\r\n${size}\r\n`
-      ));
-
-      parts.push(Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="upload.png"\r\nContent-Type: ${parsed.mime}\r\n\r\n`
-      ));
-
+      parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="upload.png"\r\nContent-Type: ${parsed.mime}\r\n\r\n`));
       parts.push(parsed.buffer);
       parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
 
@@ -115,7 +97,6 @@ mobile-first readability, cinematic depth, 8k detail.
       });
 
     } else {
-      // GENERATE MODE
       apiResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
@@ -131,16 +112,29 @@ mobile-first readability, cinematic depth, 8k detail.
       });
     }
 
+    // ✅ FIX 1: handle HTTP errors
+    if (!apiResponse.ok) {
+      const errText = await apiResponse.text();
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          error: 'OpenAI API error: ' + errText
+        })
+      };
+    }
+
     const apiText = await apiResponse.text();
 
     let apiData;
+
+    // ✅ FIX 2: safe JSON parse
     try {
       apiData = JSON.parse(apiText);
     } catch (err) {
       return {
         statusCode: 200,
         body: JSON.stringify({
-          error: 'OpenAI returned non-JSON (possible timeout): ' + apiText.substring(0, 200)
+          error: 'Invalid JSON from OpenAI: ' + apiText.slice(0, 200)
         })
       };
     }
