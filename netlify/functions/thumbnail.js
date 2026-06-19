@@ -10,11 +10,13 @@ exports.handler = async function(event, context) {
     if (event.httpMethod !== 'POST') {
       return { statusCode: 200, body: JSON.stringify({ error: 'Method must be POST' }) };
     }
+
     if (!event.body) {
       return { statusCode: 200, body: JSON.stringify({ error: 'No body received' }) };
     }
 
     const body = JSON.parse(event.body);
+
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     if (!OPENAI_API_KEY) {
       return { statusCode: 200, body: JSON.stringify({ error: 'Missing OPENAI_API_KEY env variable' }) };
@@ -32,52 +34,72 @@ exports.handler = async function(event, context) {
       imageBase64 = null
     } = body;
 
-    // gpt-image-1 supported sizes
-    let size = '1536x1024';
-    if (format === 'vertical') size = '1024x1536';
-    if (format === 'square') size = '1024x1024';
+    // 🚀 FIXED: proper YouTube + SaaS sizes
+    let size = '1280x720'; // default YouTube thumbnail (16:9)
 
-    const formatContext = format === 'square'
-      ? 'Professional channel logo / profile picture, centered composition, clean and iconic'
-      : 'Professional YouTube thumbnail, high-CTR design';
+    if (format === 'vertical') size = '1024x1792';   // Shorts / TikTok
+    if (format === 'square') size = '1024x1024';     // profile / logo
+    if (format === 'horizontal') size = '1280x720';  // YouTube thumbnail
 
-    // Build the visual description
-    const visualDescription = customPrompt.length > 0
-      ? customPrompt
-      : `${concept}. Background: ${background}. Mood: ${emotion}`;
+    // Format context optimized
+    const formatContext =
+      format === 'square'
+        ? 'Clean professional profile image, centered composition, minimal and iconic'
+        : 'High CTR YouTube thumbnail composition, cinematic, eye-catching, viral design, strong focal subject';
 
-    // Text instruction — only mention text if the user wants it baked in
-    const textInstruction = includeText && text_overlay.trim().length > 0
-      ? ` Include this exact bold text clearly readable in the image, well-positioned with strong contrast and a professional font: "${text_overlay}".`
-      : ' Do not include any text, letters, or words anywhere in the image — keep it completely clean.';
+    // Visual description
+    const visualDescription =
+      customPrompt.length > 0
+        ? customPrompt
+        : `${concept}. Background: ${background}. Mood: ${emotion}`;
 
-    const finalPrompt = `${formatContext}. ${visualDescription}. Style: ${style}.${textInstruction} Photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize clicks.`;
+    // Text handling (improved CTR logic)
+    const textInstruction =
+      includeText && text_overlay.trim().length > 0
+        ? ` Add bold, highly readable text: "${text_overlay}". Ensure strong contrast, safe margins, and mobile readability.`
+        : ' No text, no letters, no words in the image. Clean visual only.';
+
+    // 🚀 Improved CTR prompt (IMPORTANT UPGRADE)
+    const finalPrompt = `
+${formatContext}.
+${visualDescription}.
+Style: ${style}.
+${textInstruction}
+Professional lighting, ultra sharp focus, rule of thirds composition,
+subject clearly separated from background, strong contrast,
+designed for high click-through rate on YouTube,
+mobile-first readability, cinematic depth, 8k detail.
+`;
 
     let apiResponse;
 
     if (imageBase64) {
-      // EDIT MODE — use the uploaded photo as the base so the person's face/identity is preserved
+      // EDIT MODE
       const parsed = parseBase64Image(imageBase64);
+
       if (!parsed) {
         return { statusCode: 200, body: JSON.stringify({ error: 'Invalid uploaded image format' }) };
       }
 
-      // Build multipart/form-data manually (no external deps available in Netlify Functions by default)
       const boundary = '----TubervidBoundary' + Date.now();
       const parts = [];
 
       parts.push(Buffer.from(
         `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\ngpt-image-1\r\n`
       ));
+
       parts.push(Buffer.from(
         `--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${finalPrompt}\r\n`
       ));
+
       parts.push(Buffer.from(
         `--${boundary}\r\nContent-Disposition: form-data; name="size"\r\n\r\n${size}\r\n`
       ));
+
       parts.push(Buffer.from(
         `--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="upload.png"\r\nContent-Type: ${parsed.mime}\r\n\r\n`
       ));
+
       parts.push(parsed.buffer);
       parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
 
@@ -93,7 +115,7 @@ exports.handler = async function(event, context) {
       });
 
     } else {
-      // GENERATE MODE — create from scratch
+      // GENERATE MODE
       apiResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
@@ -110,21 +132,35 @@ exports.handler = async function(event, context) {
     }
 
     const apiText = await apiResponse.text();
+
     let apiData;
     try {
       apiData = JSON.parse(apiText);
-    } catch (parseErr) {
-      return { statusCode: 200, body: JSON.stringify({ error: 'OpenAI returned non-JSON (likely timeout): ' + apiText.substring(0, 200) }) };
+    } catch (err) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          error: 'OpenAI returned non-JSON (possible timeout): ' + apiText.substring(0, 200)
+        })
+      };
     }
 
     if (apiData.error) {
-      return { statusCode: 200, body: JSON.stringify({ error: 'OpenAI: ' + apiData.error.message }) };
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ error: 'OpenAI: ' + apiData.error.message })
+      };
     }
+
     if (!apiData.data || !apiData.data[0]) {
-      return { statusCode: 200, body: JSON.stringify({ error: 'No image in response' }) };
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ error: 'No image in response' })
+      };
     }
 
     const imageData = apiData.data[0];
+
     const imageUrl = imageData.url
       ? imageData.url
       : `data:image/png;base64,${imageData.b64_json}`;
