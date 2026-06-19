@@ -6,3 +6,6 @@
   from = "/app"
   to = "/app.html"
   status = 200
+
+[functions.thumbnail]
+  timeout = 60
