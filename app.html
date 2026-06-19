@@ -519,9 +519,10 @@
 
     <div style="margin-bottom:14px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Format</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
         <button onclick="setFormat('horizontal')" id="fmtH" style="background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:11px;cursor:pointer">📺 Horizontal<br><span style="font-size:10px;font-weight:400;opacity:0.8">16:9 · YouTube</span></button>
         <button onclick="setFormat('vertical')" id="fmtV" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:13px;font-weight:700;padding:11px;cursor:pointer">📱 Vertical<br><span style="font-size:10px;font-weight:400;opacity:0.8">9:16 · Shorts</span></button>
+        <button onclick="setFormat('square')" id="fmtS" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:13px;font-weight:700;padding:11px;cursor:pointer">⬛ Square<br><span style="font-size:10px;font-weight:400;opacity:0.8">1:1 · Logo</span></button>
       </div>
     </div>
 
@@ -858,12 +859,19 @@ let currentThumbConcept = {};
 
 function setFormat(fmt) {
   thumbFormat = fmt;
-  document.getElementById('fmtH').style.background = fmt === 'horizontal' ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
-  document.getElementById('fmtH').style.border = fmt === 'horizontal' ? 'none' : '1px solid var(--border)';
-  document.getElementById('fmtH').style.color = fmt === 'horizontal' ? '#fff' : 'var(--light)';
-  document.getElementById('fmtV').style.background = fmt === 'vertical' ? 'linear-gradient(135deg,var(--accent),#9b59fc)' : 'var(--card)';
-  document.getElementById('fmtV').style.border = fmt === 'vertical' ? 'none' : '1px solid var(--border)';
-  document.getElementById('fmtV').style.color = fmt === 'vertical' ? '#fff' : 'var(--light)';
+  const buttons = { horizontal: 'fmtH', vertical: 'fmtV', square: 'fmtS' };
+  Object.keys(buttons).forEach(key => {
+    const btn = document.getElementById(buttons[key]);
+    if (key === fmt) {
+      btn.style.background = 'linear-gradient(135deg,var(--accent),#9b59fc)';
+      btn.style.border = 'none';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'var(--card)';
+      btn.style.border = '1px solid var(--border)';
+      btn.style.color = 'var(--light)';
+    }
+  });
 }
 
 function setThumbMode(mode) {
