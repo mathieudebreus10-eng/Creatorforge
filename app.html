@@ -961,9 +961,14 @@ async function generateThumbnail() {
     if (data.error) throw new Error(data.error);
 
     // If user wants text, draw it on top using Canvas (perfect spelling, no AI text errors)
-    if (includeText && text.trim().length > 0) {
-      const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat);
-      document.getElementById('thumbImage').src = finalImage;
+    if (includeText && text && text.trim().length > 0) {
+      try {
+        const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat);
+        document.getElementById('thumbImage').src = finalImage;
+      } catch (canvasErr) {
+        console.error('Canvas error:', canvasErr);
+        document.getElementById('thumbImage').src = data.imageUrl;
+      }
     } else {
       document.getElementById('thumbImage').src = data.imageUrl;
     }
