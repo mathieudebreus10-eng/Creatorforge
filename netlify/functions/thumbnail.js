@@ -4,9 +4,9 @@ function parseBase64Image(dataUrl) {
   return { mime: match[1], data: dataUrl };
 }
 
-async function pollPrediction(predictionId, token, maxAttempts = 30) {
+async function pollPrediction(predictionId, token, maxAttempts = 8) {
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     const res = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
       headers: { 'Authorization': 'Bearer ' + token }
@@ -21,11 +21,43 @@ async function pollPrediction(predictionId, token, maxAttempts = 30) {
     }
     // status is 'starting' or 'processing' — keep polling
   }
-  return { success: false, error: 'Timed out waiting for image generation' };
+  return { success: false, error: 'STILL_PROCESSING', predictionId };
 }
 
 exports.handler = async function(event, context) {
   try {
+    // Handle status-check requests for ongoing Replicate predictions
+    if (event.httpMethod === 'GET' && event.queryStringParameters && event.queryStringParameters.checkId) {
+      const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+      const predictionId = event.queryStringParameters.checkId;
+
+      const res = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+        headers: { 'Authorization': 'Bearer ' + REPLICATE_API_TOKEN }
+      });
+      const data = await res.json();
+
+      if (data.status === 'succeeded') {
+        const imageUrl = Array.isArray(data.output) ? data.output[0] : data.output;
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl })
+        };
+      }
+      if (data.status === 'failed' || data.status === 'canceled') {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: data.error || 'Generation failed' })
+        };
+      }
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processing: true, predictionId })
+      };
+    }
+
     if (event.httpMethod !== 'POST') {
       return {
         statusCode: 200,
@@ -119,6 +151,13 @@ exports.handler = async function(event, context) {
       const result = await pollPrediction(createData.id, REPLICATE_API_TOKEN);
 
       if (!result.success) {
+        if (result.error === 'STILL_PROCESSING') {
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ processing: true, predictionId: result.predictionId })
+          };
+        }
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
