@@ -62,7 +62,7 @@ Respond with ONLY this JSON structure, nothing else:
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.85,
-            maxOutputTokens: 3000,
+            maxOutputTokens: 8000,
             responseMimeType: "application/json"
           }
         })
