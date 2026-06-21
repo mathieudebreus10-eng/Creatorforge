@@ -592,7 +592,7 @@ async function generate() {
     renderResults(data);
 
   } catch (err) {
-    showError('Something went wrong. Please try again.');
+    showError(err.message || 'Something went wrong. Please try again.');
   } finally {
     showLoading(false);
     document.getElementById('generateBtn').disabled = false;
@@ -993,3 +993,4 @@ async function downloadThumbnail() {
 </script>
 </body>
 </html>
+
