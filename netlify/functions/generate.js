@@ -4,7 +4,7 @@ exports.handler = async function(event, context) {
   }
 
   const { topic, niche, tone, language } = JSON.parse(event.body);
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const lang = language || 'English';
 
   const prompt = `You are a world-class YouTube growth strategist and viral content expert with 10+ years experience helping creators grow to millions of subscribers.
@@ -40,32 +40,30 @@ SEO DESCRIPTION RULES:
 - Include a clear call to action
 - 150-200 words with natural keyword placement
 
-Respond with ONLY raw JSON, no markdown, no backticks:
+Respond with ONLY raw JSON, no markdown, no backticks, no explanation:
 
 {"titles":["viral title 1","viral title 2","viral title 3","viral title 4","viral title 5"],"hooks":["powerful hook 1","powerful hook 2","powerful hook 3"],"seo_description":"150-200 word SEO description","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],"script":{"hook":"Powerful 15-second hook script that stops the scroll","intro":"30-60 second intro that builds credibility and promises value","body":[{"section":"Key Point 1 with specific detail","content":"Detailed, engaging script content with examples"},{"section":"Key Point 2 with specific detail","content":"Detailed, engaging script content with examples"},{"section":"Key Point 3 with specific detail","content":"Detailed, engaging script content with examples"}],"outro":"Strong call to action — subscribe, comment, share"},"thumbnail":{"background":"Specific background that creates contrast and emotion","main_image":"Specific visual element that creates curiosity","text_overlay":"3-4 WORD HOOK","emotion":"Specific emotion that drives clicks"}}`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 2500,
-        temperature: 0.85,
-        messages: [
-          { role: 'system', content: 'You are a world-class YouTube viral content expert. You create titles and scripts that consistently get millions of views. Output raw JSON only. No markdown. No backticks.' },
-          { role: 'user', content: prompt }
-        ]
-      })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.85,
+            maxOutputTokens: 2500
+          }
+        })
+      }
+    );
 
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
 
-    const text = data.choices[0].message.content;
+    const text = data.candidates[0].content.parts[0].text;
     const clean = text.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
 
