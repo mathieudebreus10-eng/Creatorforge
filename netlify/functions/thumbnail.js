@@ -1,4 +1,3 @@
-
 // Helper: convert base64 data URL to a Buffer + mime type
 function parseBase64Image(dataUrl) {
   const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -40,8 +39,6 @@ exports.handler = async function(event, context) {
       emotion = 'confident',
       style = 'cinematic, high contrast',
       format = 'horizontal',
-      includeText = false,
-      text_overlay = '',
       imageBase64 = null
     } = body;
 
@@ -60,13 +57,14 @@ exports.handler = async function(event, context) {
       ? customPrompt
       : `${concept}. Background: ${background}. Mood: ${emotion}`;
 
-    // Text is NEVER baked into the AI image anymore — always added via Canvas afterward for perfect spelling
-    const finalPrompt = `${formatContext}. ${visualDescription}. Style: ${style}. Photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize clicks, 8k quality. No text, no letters, no words in the image.`;
+    // Text is never baked into the AI image — always added via Canvas afterward for perfect spelling
+    const finalPrompt = `${formatContext}. ${visualDescription}. Style: ${style}. Photorealistic, ultra sharp, high contrast, professional lighting, 8k quality. No text, no letters, no words in the image.`;
 
     let apiResponse;
+    let endpoint;
 
     if (imageBase64) {
-      // IMAGE-TO-IMAGE MODE — use uploaded photo as structural reference to preserve identity
+      // STRUCTURE MODE — uses uploaded photo's composition/structure as a guide while preserving identity better than img2img
       const parsed = parseBase64Image(imageBase64);
       if (!parsed) {
         return {
@@ -76,6 +74,8 @@ exports.handler = async function(event, context) {
         };
       }
 
+      endpoint = 'https://api.stability.ai/v2beta/stable-image/control/structure';
+
       const boundary = '----TubervidBoundary' + Date.now();
       const parts = [];
 
@@ -83,9 +83,8 @@ exports.handler = async function(event, context) {
         parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`));
       };
 
-      appendField('prompt', finalPrompt);
-      appendField('mode', 'image-to-image');
-      appendField('strength', '0.35'); // low strength = stay close to original photo (preserve identity)
+      appendField('prompt', finalPrompt + ' Keep the same person, same face, same identity as the reference image.');
+      appendField('control_strength', '0.85'); // higher = follow uploaded photo's structure/identity more closely
       appendField('output_format', 'png');
 
       parts.push(Buffer.from(
@@ -96,7 +95,7 @@ exports.handler = async function(event, context) {
 
       const multipartBody = Buffer.concat(parts);
 
-      apiResponse = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
+      apiResponse = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + STABILITY_API_KEY,
@@ -107,13 +106,15 @@ exports.handler = async function(event, context) {
       });
 
     } else {
-      // TEXT-TO-IMAGE MODE — generate from scratch
+      // TEXT-TO-IMAGE MODE — generate from scratch, aspect_ratio works here
+      endpoint = 'https://api.stability.ai/v2beta/stable-image/generate/core';
+
       const formData = new FormData();
       formData.append('prompt', finalPrompt);
       formData.append('aspect_ratio', aspect_ratio);
       formData.append('output_format', 'png');
 
-      apiResponse = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
+      apiResponse = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + STABILITY_API_KEY,
@@ -128,7 +129,7 @@ exports.handler = async function(event, context) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Stability AI error: ' + errText.substring(0, 300) })
+        body: JSON.stringify({ error: 'Stability AI error (' + endpoint.split('/').pop() + '): ' + errText.substring(0, 300) })
       };
     }
 
@@ -147,7 +148,7 @@ exports.handler = async function(event, context) {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl, text_overlay, includeText, format })
+      body: JSON.stringify({ imageUrl })
     };
 
   } catch (err) {
@@ -158,4 +159,3 @@ exports.handler = async function(event, context) {
     };
   }
 };
-
