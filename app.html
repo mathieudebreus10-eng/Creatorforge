@@ -1006,8 +1006,18 @@ async function generateThumbnail() {
       body: JSON.stringify(body)
     });
 
-    const data = await response.json();
+    let data = await response.json();
     if (data.error) throw new Error(data.error);
+
+    // If Replicate is still processing, poll from the browser until it's done
+    if (data.processing && data.predictionId) {
+      data = await pollThumbnailStatus(data.predictionId);
+      if (data.error) throw new Error(data.error);
+    }
+
+    if (!data.imageUrl) {
+      throw new Error('No image URL received. Response: ' + JSON.stringify(data).substring(0, 200));
+    }
 
     // If user wants text, draw it on top using Canvas (perfect spelling, no AI text errors)
     if (includeText && text && text.trim().length > 0) {
@@ -1138,6 +1148,18 @@ function resizeImageToFormat(base64DataUrl, format) {
     img.onerror = () => reject(new Error('Failed to load uploaded image'));
     img.src = base64DataUrl;
   });
+}
+
+async function pollThumbnailStatus(predictionId, maxAttempts = 20) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const res = await fetch(`/.netlify/functions/thumbnail?checkId=${predictionId}`);
+    const data = await res.json();
+    if (data.imageUrl) return data;
+    if (data.error) return data;
+    // still processing, keep polling
+  }
+  return { error: 'Image generation is taking too long. Please try again.' };
 }
 
 function fileToBase64(file) {
