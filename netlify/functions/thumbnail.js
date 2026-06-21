@@ -37,12 +37,25 @@ exports.handler = async function(event, context) {
       const data = await res.json();
 
       if (data.status === 'succeeded') {
-        const imageUrl = Array.isArray(data.output) ? data.output[0] : data.output;
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrl })
-        };
+        const replicateUrl = Array.isArray(data.output) ? data.output[0] : data.output;
+        // Download and convert to base64 to avoid CORS/expiry issues with the temporary Replicate URL
+        try {
+          const imgRes = await fetch(replicateUrl);
+          const imgBuffer = await imgRes.arrayBuffer();
+          const base64 = Buffer.from(imgBuffer).toString('base64');
+          const contentType = imgRes.headers.get('content-type') || 'image/png';
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: `data:${contentType};base64,${base64}` })
+          };
+        } catch (downloadErr) {
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: replicateUrl })
+          };
+        }
       }
       if (data.status === 'failed' || data.status === 'canceled') {
         return {
@@ -165,13 +178,24 @@ exports.handler = async function(event, context) {
         };
       }
 
-      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
-
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl })
-      };
+      const replicateUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      try {
+        const imgRes = await fetch(replicateUrl);
+        const imgBuffer = await imgRes.arrayBuffer();
+        const base64 = Buffer.from(imgBuffer).toString('base64');
+        const contentType = imgRes.headers.get('content-type') || 'image/png';
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl: `data:${contentType};base64,${base64}` })
+        };
+      } catch (downloadErr) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl: replicateUrl })
+        };
+      }
     }
 
     // ============ TEXT-TO-IMAGE MODE — use Stability AI (no photo needed) ============
