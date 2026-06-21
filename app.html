@@ -915,6 +915,50 @@ function previewUpload(input) {
   reader.readAsDataURL(file);
 }
 
+// Crop/resize the uploaded photo to match the chosen thumbnail format BEFORE sending to the API
+function resizeImageToFormat(dataUrl, format) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const targetRatios = {
+        horizontal: 16 / 9,
+        vertical: 9 / 16,
+        square: 1
+      };
+      const targetRatio = targetRatios[format] || 16 / 9;
+
+      let sx = 0, sy = 0, sw = img.width, sh = img.height;
+      const currentRatio = img.width / img.height;
+
+      if (currentRatio > targetRatio) {
+        // Image is too wide — crop sides
+        sw = img.height * targetRatio;
+        sx = (img.width - sw) / 2;
+      } else {
+        // Image is too tall — crop top/bottom
+        sh = img.width / targetRatio;
+        sy = (img.height - sh) / 2;
+      }
+
+      // Output size based on format (capped for API limits)
+      let outW, outH;
+      if (format === 'vertical') { outW = 1024; outH = 1820; }
+      else if (format === 'square') { outW = 1024; outH = 1024; }
+      else { outW = 1820; outH = 1024; }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = () => reject(new Error('Failed to load uploaded photo'));
+    img.src = dataUrl;
+  });
+}
+
 async function generateThumbnail() {
   const text = document.getElementById('thumbText').value.trim() || currentThumbConcept.text_overlay || 'YOUR TITLE';
   const style = document.getElementById('thumbStyle').value;
@@ -947,8 +991,13 @@ async function generateThumbnail() {
         document.getElementById('thumbGenBtn').disabled = false;
         return;
       }
-      const base64 = await fileToBase64(file);
+      const rawBase64 = await fileToBase64(file);
+      // Crop/resize the uploaded photo to match the chosen format BEFORE sending —
+      // the structure endpoint follows the input image's aspect ratio
+      const base64 = await resizeImageToFormat(rawBase64, thumbFormat);
       body.imageBase64 = base64;
+      // Reinforce identity preservation in the prompt
+      body.concept = (body.concept || '') + ', same person, same face, preserve facial identity and features exactly';
     }
 
     const response = await fetch('/.netlify/functions/thumbnail', {
@@ -1043,6 +1092,51 @@ function drawTextOnImage(imageUrl, text, format) {
     };
     img.onerror = () => reject(new Error('Failed to load image for text overlay'));
     img.src = imageUrl;
+  });
+}
+
+function resizeImageToFormat(base64DataUrl, format) {
+  return new Promise((resolve, reject) => {
+    const targetRatios = {
+      horizontal: 16 / 9,
+      vertical: 9 / 16,
+      square: 1
+    };
+    const targetRatio = targetRatios[format] || 16 / 9;
+
+    const img = new Image();
+    img.onload = () => {
+      let srcW = img.width, srcH = img.height;
+      let srcRatio = srcW / srcH;
+
+      // Crop the source image to match target ratio (center crop)
+      let cropW = srcW, cropH = srcH, cropX = 0, cropY = 0;
+      if (srcRatio > targetRatio) {
+        // source is wider than target — crop sides
+        cropW = srcH * targetRatio;
+        cropX = (srcW - cropW) / 2;
+      } else {
+        // source is taller than target — crop top/bottom
+        cropH = srcW / targetRatio;
+        cropY = (srcH - cropH) / 2;
+      }
+
+      // Output size based on format (reasonable resolution, max ~1.2MP)
+      let outW, outH;
+      if (format === 'horizontal') { outW = 1344; outH = 756; }
+      else if (format === 'vertical') { outW = 756; outH = 1344; }
+      else { outW = 1024; outH = 1024; }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
+
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('Failed to load uploaded image'));
+    img.src = base64DataUrl;
   });
 }
 
