@@ -16,12 +16,12 @@ exports.handler = async function(event, context) {
     }
 
     const body = JSON.parse(event.body);
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    if (!OPENAI_API_KEY) {
+    const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+    if (!STABILITY_API_KEY) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing OPENAI_API_KEY env variable' })
+        body: JSON.stringify({ error: 'Missing STABILITY_API_KEY env variable' })
       };
     }
 
@@ -36,72 +36,63 @@ exports.handler = async function(event, context) {
       text_overlay = ''
     } = body;
 
-    const allowedSizes = {
-      square: '1024x1024',
-      vertical: '1024x1536',
-      horizontal: '1536x1024'
+    // Stability AI aspect ratios
+    const aspectRatios = {
+      horizontal: '16:9',
+      vertical: '9:16',
+      square: '1:1'
     };
-    const size = allowedSizes[format] || allowedSizes.horizontal;
+    const aspect_ratio = aspectRatios[format] || '16:9';
 
     const formatContext = format === 'square'
-      ? 'Professional channel logo / profile picture, centered composition, clean and iconic'
-      : 'Professional YouTube thumbnail, high-CTR design';
+      ? 'Professional channel logo, profile picture, centered composition, clean and iconic'
+      : 'Professional YouTube thumbnail, high-CTR viral design';
 
     const visualDescription = customPrompt.length > 0
       ? customPrompt
       : `${concept}. Background: ${background}. Mood: ${emotion}`;
 
     const textInstruction = includeText && text_overlay.trim().length > 0
-      ? ` Include this exact bold text clearly readable in the image, well-positioned with strong contrast and a professional font: "${text_overlay}".`
-      : ' Do not include any text, letters, or words anywhere in the image — keep it completely clean.';
+      ? ` Bold readable text overlay saying "${text_overlay}", strong contrast, professional font, well positioned.`
+      : ' No text, no letters, no words anywhere in the image, completely clean visual.';
 
-    const finalPrompt = `${formatContext}. ${visualDescription}. Style: ${style}.${textInstruction} Photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize clicks.`;
+    const finalPrompt = `${formatContext}. ${visualDescription}. Style: ${style}.${textInstruction} Photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize clicks, 8k quality.`;
 
-    const apiResponse = await fetch('https://api.openai.com/v1/images/generations', {
+    // Stability AI v2beta - Stable Image Core endpoint
+    const formData = new FormData();
+    formData.append('prompt', finalPrompt);
+    formData.append('aspect_ratio', aspect_ratio);
+    formData.append('output_format', 'png');
+
+    const apiResponse = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + OPENAI_API_KEY
+        'Authorization': 'Bearer ' + STABILITY_API_KEY,
+        'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        model: 'gpt-image-1',
-        prompt: finalPrompt,
-        n: 1,
-        size: size
-      })
+      body: formData
     });
 
-    const apiText = await apiResponse.text();
-    let apiData;
-    try {
-      apiData = JSON.parse(apiText);
-    } catch (parseErr) {
+    if (!apiResponse.ok) {
+      const errText = await apiResponse.text();
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'OpenAI returned non-JSON: ' + apiText.substring(0, 300) })
+        body: JSON.stringify({ error: 'Stability AI error: ' + errText.substring(0, 300) })
       };
     }
 
-    if (apiData.error) {
+    const apiData = await apiResponse.json();
+
+    if (!apiData.image) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'OpenAI: ' + apiData.error.message })
-      };
-    }
-    if (!apiData.data || !apiData.data[0]) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No image in response' })
+        body: JSON.stringify({ error: 'No image in response: ' + JSON.stringify(apiData).substring(0, 200) })
       };
     }
 
-    const imageData = apiData.data[0];
-    const imageUrl = imageData.url
-      ? imageData.url
-      : `data:image/png;base64,${imageData.b64_json}`;
+    const imageUrl = `data:image/png;base64,${apiData.image}`;
 
     return {
       statusCode: 200,
@@ -117,3 +108,4 @@ exports.handler = async function(event, context) {
     };
   }
 };
+
