@@ -7,6 +7,14 @@ exports.handler = async function(event, context) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const lang = language || 'English';
 
+  if (!GEMINI_API_KEY) {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Missing GEMINI_API_KEY env variable' })
+    };
+  }
+
   const prompt = `You are a world-class YouTube growth strategist and viral content expert with 10+ years experience helping creators grow to millions of subscribers.
 
 Video topic: "${topic}"
@@ -40,9 +48,9 @@ SEO DESCRIPTION RULES:
 - Include a clear call to action
 - 150-200 words with natural keyword placement
 
-Respond with ONLY raw JSON, no markdown, no backticks, no explanation:
+Respond with ONLY this JSON structure, nothing else:
 
-{"titles":["viral title 1","viral title 2","viral title 3","viral title 4","viral title 5"],"hooks":["powerful hook 1","powerful hook 2","powerful hook 3"],"seo_description":"150-200 word SEO description","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],"script":{"hook":"Powerful 15-second hook script that stops the scroll","intro":"30-60 second intro that builds credibility and promises value","body":[{"section":"Key Point 1 with specific detail","content":"Detailed, engaging script content with examples"},{"section":"Key Point 2 with specific detail","content":"Detailed, engaging script content with examples"},{"section":"Key Point 3 with specific detail","content":"Detailed, engaging script content with examples"}],"outro":"Strong call to action — subscribe, comment, share"},"thumbnail":{"background":"Specific background that creates contrast and emotion","main_image":"Specific visual element that creates curiosity","text_overlay":"3-4 WORD HOOK","emotion":"Specific emotion that drives clicks"}}`;
+{"titles":["viral title 1","viral title 2","viral title 3","viral title 4","viral title 5"],"hooks":["powerful hook 1","powerful hook 2","powerful hook 3"],"seo_description":"150-200 word SEO description","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],"script":{"hook":"Powerful 15-second hook script","intro":"30-60 second intro","body":[{"section":"Key Point 1","content":"Script content"},{"section":"Key Point 2","content":"Script content"},{"section":"Key Point 3","content":"Script content"}],"outro":"Strong call to action"},"thumbnail":{"background":"Background description","main_image":"Main visual element","text_overlay":"3-4 WORD HOOK","emotion":"Target emotion"}}`;
 
   try {
     const response = await fetch(
@@ -54,18 +62,44 @@ Respond with ONLY raw JSON, no markdown, no backticks, no explanation:
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.85,
-            maxOutputTokens: 2500
+            maxOutputTokens: 3000,
+            responseMimeType: "application/json"
           }
         })
       }
     );
 
     const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
+
+    if (data.error) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Gemini: ' + data.error.message })
+      };
+    }
+
+    if (!data.candidates || !data.candidates.length) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'No candidates returned: ' + JSON.stringify(data).substring(0, 300) })
+      };
+    }
 
     const text = data.candidates[0].content.parts[0].text;
     const clean = text.replace(/```json|```/g, '').trim();
-    const result = JSON.parse(clean);
+
+    let result;
+    try {
+      result = JSON.parse(clean);
+    } catch (parseErr) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'JSON parse failed. Raw text: ' + clean.substring(0, 300) })
+      };
+    }
 
     // Gerar tags a partir das hashtags
     result.tags = (result.hashtags || [])
@@ -86,8 +120,9 @@ Respond with ONLY raw JSON, no markdown, no backticks, no explanation:
 
   } catch (err) {
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message })
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Caught exception: ' + err.message })
     };
   }
 };
