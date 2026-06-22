@@ -147,25 +147,17 @@ Respond with ONLY this JSON structure, nothing else:
   let lastError = '';
 
   for (const model of geminiModels) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const text = await tryGemini(model);
-        const result = parseAndBuild(text);
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(result)
-        };
-      } catch (err) {
-        lastError = `[${model} attempt ${attempt}] ${err.message || JSON.stringify(err)}`;
-        console.log('Gemini error:', lastError);
-        const code = err.code;
-        if (code === 429 || code === 503 || code === 500) {
-          await sleep(attempt * 2000);
-          continue;
-        }
-        break;
-      }
+    try {
+      const text = await tryGemini(model);
+      const result = parseAndBuild(text);
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result)
+      };
+    } catch (err) {
+      lastError = `[${model}] ${err.message || JSON.stringify(err)}`;
+      console.log('Gemini error:', lastError);
     }
   }
 
