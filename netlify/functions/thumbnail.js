@@ -157,7 +157,15 @@ exports.handler = async function(event, context) {
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Replicate: ' + createData.error })
+          body: JSON.stringify({ error: 'Replicate: ' + JSON.stringify(createData.error) })
+        };
+      }
+
+      if (!createData.id) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Replicate did not return a prediction ID. Response: ' + JSON.stringify(createData).substring(0, 250) })
         };
       }
 
