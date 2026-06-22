@@ -1010,8 +1010,12 @@ async function generateThumbnail() {
     if (data.error) throw new Error(data.error);
 
     // If Replicate is still processing, poll from the browser until it's done
-    if (data.processing && data.predictionId) {
-      data = await pollThumbnailStatus(data.predictionId);
+    if (data.processing) {
+      const pid = data.predictionId;
+      if (!pid) {
+        throw new Error('Processing started but no tracking ID returned. Please try again.');
+      }
+      data = await pollThumbnailStatus(pid);
       if (data.error) throw new Error(data.error);
     }
 
@@ -1150,16 +1154,20 @@ function resizeImageToFormat(base64DataUrl, format) {
   });
 }
 
-async function pollThumbnailStatus(predictionId, maxAttempts = 20) {
+async function pollThumbnailStatus(predictionId, maxAttempts = 45) {
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise(resolve => setTimeout(resolve, 2000));
-    const res = await fetch(`/.netlify/functions/thumbnail?checkId=${predictionId}`);
-    const data = await res.json();
-    if (data.imageUrl) return data;
-    if (data.error) return data;
-    // still processing, keep polling
+    try {
+      const res = await fetch(`/.netlify/functions/thumbnail?checkId=${predictionId}`);
+      const data = await res.json();
+      if (data.imageUrl) return data;
+      if (data.error) return data;
+      // still processing, keep polling
+    } catch (e) {
+      // network hiccup, keep trying
+    }
   }
-  return { error: 'Image generation is taking too long. Please try again.' };
+  return { error: 'Image generation timed out after 90 seconds. The face-consistency model can be slow — please try again.' };
 }
 
 function fileToBase64(file) {
