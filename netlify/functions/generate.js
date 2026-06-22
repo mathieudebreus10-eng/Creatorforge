@@ -1,3 +1,12 @@
+const { createClient } = require('@supabase/supabase-js');
+
+const PLAN_LIMITS = {
+  free: 10,
+  basic: 60,
+  pro: 275,
+  creator: 450
+};
+
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -6,46 +15,95 @@ exports.handler = async function(event, context) {
   const { topic, niche, tone, language, token } = JSON.parse(event.body);
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
   const lang = language || 'English';
 
   if (!GEMINI_API_KEY) {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Missing GEMINI_API_KEY env variable' })
+      body: JSON.stringify({ error: 'Missing GEMINI_API_KEY' })
     };
   }
 
-  // ─── CHECK & INCREMENT USAGE LIMIT ───────────────────────────────────────
-  if (token) {
-    try {
-      const usageRes = await fetch(`${process.env.URL}/.netlify/functions/check-usage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, action: 'increment' })
-      });
-      const usageData = await usageRes.json();
+  // ─── STEP 1: CHECK USAGE LIMIT ───────────────────────────────────────────
+  let userId = null;
+  let currentUsed = 0;
+  let userPlan = 'free';
+  let userMonth = new Date().toISOString().slice(0, 7);
+  let sb = null;
 
-      if (usageData.limit_reached) {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: usageData.error, limit_reached: true, plan: usageData.plan })
-        };
-      }
-      if (usageData.error && !usageData.allowed) {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: usageData.error })
-        };
+  if (token && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    try {
+      sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+      // Get user from token
+      const { data: { user }, error: authError } = await sb.auth.getUser(token);
+
+      if (!authError && user) {
+        userId = user.id;
+
+        // Get or create profile
+        let { data: profile } = await sb
+          .from('profiles')
+          .select('plan')
+          .eq('id', userId)
+          .single();
+
+        if (!profile) {
+          await sb.from('profiles').insert({
+            id: userId,
+            email: user.email,
+            plan: 'free'
+          });
+          profile = { plan: 'free' };
+        }
+
+        userPlan = profile.plan || 'free';
+        const limit = PLAN_LIMITS[userPlan] || PLAN_LIMITS.free;
+
+        // Get or create usage record
+        let { data: usage } = await sb
+          .from('usage')
+          .select('thumbnails_used')
+          .eq('user_id', userId)
+          .eq('month', userMonth)
+          .single();
+
+        if (!usage) {
+          await sb.from('usage').insert({
+            user_id: userId,
+            month: userMonth,
+            thumbnails_used: 0
+          });
+          usage = { thumbnails_used: 0 };
+        }
+
+        currentUsed = usage.thumbnails_used || 0;
+
+        // Check if limit reached
+        if (currentUsed >= limit) {
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              error: `🔒 You've reached your ${userPlan} plan limit of ${limit} generations this month. Upgrade to continue!`,
+              limit_reached: true,
+              plan: userPlan,
+              used: currentUsed,
+              limit
+            })
+          };
+        }
       }
     } catch (e) {
-      // If usage check fails, allow generation (don't block user)
-      console.log('Usage check failed:', e.message);
+      console.log('Usage check error:', e.message);
+      // Don't block generation if usage check fails
     }
   }
 
+  // ─── STEP 2: GENERATE CONTENT ────────────────────────────────────────────
   const prompt = `You are a world-class YouTube growth strategist and viral content expert with 10+ years experience helping creators grow to millions of subscribers.
 
 Video topic: "${topic}"
@@ -82,10 +140,6 @@ SEO DESCRIPTION RULES:
 Respond with ONLY this JSON structure, nothing else:
 
 {"titles":["viral title 1","viral title 2","viral title 3","viral title 4","viral title 5"],"hooks":["powerful hook 1","powerful hook 2","powerful hook 3"],"seo_description":"150-200 word SEO description","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],"script":{"hook":"Powerful 15-second hook script","intro":"30-60 second intro","body":[{"section":"Key Point 1","content":"Script content"},{"section":"Key Point 2","content":"Script content"},{"section":"Key Point 3","content":"Script content"}],"outro":"Strong call to action"},"thumbnail":{"background":"Background description","main_image":"Main visual element","text_overlay":"3-4 WORD HOOK","emotion":"Target emotion"}}`;
-
-  function sleep(ms) {
-    return new Promise(r => setTimeout(r, ms));
-  }
 
   async function tryGemini(model) {
     const response = await fetch(
@@ -143,40 +197,55 @@ Respond with ONLY this JSON structure, nothing else:
     return result;
   }
 
-  const geminiModels = ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
   let lastError = '';
+  let result = null;
 
-  for (const model of geminiModels) {
+  // Try Gemini models first
+  for (const model of ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash']) {
     try {
       const text = await tryGemini(model);
-      const result = parseAndBuild(text);
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result)
-      };
+      result = parseAndBuild(text);
+      break;
     } catch (err) {
       lastError = `[${model}] ${err.message || JSON.stringify(err)}`;
       console.log('Gemini error:', lastError);
     }
   }
 
-  // GPT-4.1 Mini fallback
-  try {
-    const text = await tryGPT();
-    const result = parseAndBuild(text);
+  // GPT fallback
+  if (!result) {
+    try {
+      const text = await tryGPT();
+      result = parseAndBuild(text);
+    } catch (gptErr) {
+      lastError = gptErr.message;
+    }
+  }
+
+  if (!result) {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result)
+      body: JSON.stringify({ error: 'Erro: ' + lastError })
     };
-  } catch (gptErr) {
-    lastError = gptErr.message;
+  }
+
+  // ─── STEP 3: INCREMENT USAGE (only after successful generation) ──────────
+  if (sb && userId) {
+    try {
+      await sb
+        .from('usage')
+        .update({ thumbnails_used: currentUsed + 1 })
+        .eq('user_id', userId)
+        .eq('month', userMonth);
+    } catch (e) {
+      console.log('Usage increment error:', e.message);
+    }
   }
 
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ error: 'Erro detalhado: ' + lastError })
+    body: JSON.stringify(result)
   };
 };
