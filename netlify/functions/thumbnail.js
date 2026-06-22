@@ -132,13 +132,14 @@ exports.handler = async function(event, context) {
       const widths = { horizontal: 1024, vertical: 768, square: 1024 };
       const heights = { horizontal: 576, vertical: 1024, square: 1024 };
 
-      const createRes = await fetch('https://api.replicate.com/v1/models/zsxkib/instant-id/predictions', {
+      const createRes = await fetch('https://api.replicate.com/v1/predictions', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + REPLICATE_API_TOKEN,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          version: 'c98b2e7a196828d00955767813b81fc05c5c9b294c670c6d147d545fed4ceecf',
           input: {
             image: parsed.data,
             prompt: finalPrompt,
@@ -146,7 +147,9 @@ exports.handler = async function(event, context) {
             height: heights[format] || 576,
             negative_prompt: 'text, letters, watermark, low quality, blurry, distorted face',
             ip_adapter_scale: 0.8,
-            controlnet_conditioning_scale: 0.8
+            controlnet_conditioning_scale: 0.8,
+            num_inference_steps: 30,
+            guidance_scale: 5
           }
         })
       });
