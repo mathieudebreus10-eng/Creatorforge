@@ -4,6 +4,10 @@ function parseBase64Image(dataUrl) {
   return { mime: match[1], base64: match[2] };
 }
 
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
 exports.handler = async function(event, context) {
   try {
     if (event.httpMethod !== 'POST') {
@@ -23,6 +27,8 @@ exports.handler = async function(event, context) {
 
     const body = JSON.parse(event.body);
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+
     if (!GEMINI_API_KEY) {
       return {
         statusCode: 200,
@@ -84,60 +90,114 @@ exports.handler = async function(event, context) {
       });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: parts }]
-        })
+    // ─── GEMINI IMAGE MODELS (in order of preference) ───────────────────────
+    const geminiModels = [
+      'gemini-2.5-flash-preview-05-20',  // 1st: Gemini 2.5 Flash (principal)
+      'gemini-3.1-flash-image'            // 2nd: Gemini 3.1 Flash Image (fallback)
+    ];
+
+    async function tryGemini(model) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: parts }]
+          })
+        }
+      );
+      const data = await response.json();
+      if (data.error) throw { code: data.error.code, message: data.error.message };
+      if (!data.candidates || !data.candidates[0]) throw { code: 500, message: 'No candidates returned' };
+
+      const responseParts = data.candidates[0].content.parts;
+      for (const part of responseParts) {
+        if (part.inline_data && part.inline_data.data) return part.inline_data.data;
+        if (part.inlineData && part.inlineData.data) return part.inlineData.data;
       }
-    );
+      throw { code: 500, message: 'No image data in response' };
+    }
 
-    const data = await response.json();
+    // ─── STABILITY AI FALLBACK ───────────────────────────────────────────────
+    async function tryStability() {
+      if (!STABILITY_API_KEY) throw new Error('Missing STABILITY_API_KEY');
 
-    if (data.error) {
+      const dimensionMap = {
+        horizontal: { width: 1344, height: 768 },
+        vertical:   { width: 768,  height: 1344 },
+        square:     { width: 1024, height: 1024 }
+      };
+      const dim = dimensionMap[format] || dimensionMap.horizontal;
+
+      const formData = new FormData();
+      formData.append('prompt', promptText.substring(0, 500));
+      formData.append('output_format', 'png');
+      formData.append('width', dim.width);
+      formData.append('height', dim.height);
+
+      const response = await fetch(
+        'https://api.stability.ai/v2beta/stable-image/generate/core',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STABILITY_API_KEY}`,
+            'Accept': 'image/*'
+          },
+          body: formData
+        }
+      );
+
+      if (!response.ok) throw new Error('Stability AI error: ' + response.status);
+
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      return base64;
+    }
+
+    // ─── MAIN LOGIC: try Gemini models first, then Stability AI ─────────────
+    let lastError = '';
+
+    // Try each Gemini model with 2 retries each
+    for (const model of geminiModels) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const imageData = await tryGemini(model);
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: `data:image/png;base64,${imageData}` })
+          };
+        } catch (err) {
+          lastError = err.message || JSON.stringify(err);
+          const code = err.code;
+          // Only retry on overload errors
+          if (code === 429 || code === 503 || code === 500) {
+            await sleep(attempt * 2000);
+            continue;
+          }
+          break; // Other errors — try next model
+        }
+      }
+    }
+
+    // Gemini failed — try Stability AI
+    try {
+      const imageData = await tryStability();
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Gemini: ' + data.error.message })
+        body: JSON.stringify({ imageUrl: `data:image/png;base64,${imageData}` })
       };
+    } catch (stabilityErr) {
+      lastError = stabilityErr.message;
     }
 
-    if (!data.candidates || !data.candidates[0]) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No image returned: ' + JSON.stringify(data).substring(0, 250) })
-      };
-    }
-
-    const responseParts = data.candidates[0].content.parts;
-    let imageData = null;
-    for (const part of responseParts) {
-      if (part.inline_data && part.inline_data.data) {
-        imageData = part.inline_data.data;
-        break;
-      }
-      if (part.inlineData && part.inlineData.data) {
-        imageData = part.inlineData.data;
-        break;
-      }
-    }
-
-    if (!imageData) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No image data in response. The model may have refused. Response: ' + JSON.stringify(data).substring(0, 250) })
-      };
-    }
-
+    // All failed
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl: `data:image/png;base64,${imageData}` })
+      body: JSON.stringify({ error: 'All image providers failed. Please try again in a few minutes. (' + lastError + ')' })
     };
 
   } catch (err) {
