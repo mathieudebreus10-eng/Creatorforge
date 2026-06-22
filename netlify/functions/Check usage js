@@ -1,0 +1,154 @@
+const { createClient } = require('@supabase/supabase-js');
+
+const PLAN_LIMITS = {
+  free: 10,
+  basic: 60,
+  pro: 275,
+  creator: 450
+};
+
+exports.handler = async function(event, context) {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Missing Supabase env variables' })
+    };
+  }
+
+  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  try {
+    const { token, action } = JSON.parse(event.body);
+    // action: 'check' or 'increment'
+
+    if (!token) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'No token provided' })
+      };
+    }
+
+    // Verify user from token
+    const { data: { user }, error: authError } = await sb.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Invalid or expired session. Please log in again.' })
+      };
+    }
+
+    const userId = user.id;
+
+    // Get or create profile
+    let { data: profile } = await sb
+      .from('profiles')
+      .select('plan')
+      .eq('id', userId)
+      .single();
+
+    if (!profile) {
+      await sb.from('profiles').insert({
+        id: userId,
+        email: user.email,
+        plan: 'free'
+      });
+      profile = { plan: 'free' };
+    }
+
+    const plan = profile.plan || 'free';
+    const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+    const month = new Date().toISOString().slice(0, 7); // "2026-06"
+
+    // Get or create usage record for this month
+    let { data: usage } = await sb
+      .from('usage')
+      .select('thumbnails_used')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .single();
+
+    if (!usage) {
+      await sb.from('usage').insert({
+        user_id: userId,
+        month: month,
+        thumbnails_used: 0
+      });
+      usage = { thumbnails_used: 0 };
+    }
+
+    const used = usage.thumbnails_used || 0;
+    const remaining = limit - used;
+
+    if (action === 'check') {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          allowed: remaining > 0,
+          used,
+          limit,
+          remaining,
+          plan
+        })
+      };
+    }
+
+    if (action === 'increment') {
+      if (remaining <= 0) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            error: `You've reached your ${plan} plan limit of ${limit} generations this month. Upgrade to get more!`,
+            limit_reached: true,
+            plan,
+            limit,
+            used
+          })
+        };
+      }
+
+      // Increment usage
+      await sb
+        .from('usage')
+        .update({ thumbnails_used: used + 1 })
+        .eq('user_id', userId)
+        .eq('month', month);
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          allowed: true,
+          used: used + 1,
+          limit,
+          remaining: remaining - 1,
+          plan
+        })
+      };
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Invalid action. Use check or increment.' })
+    };
+
+  } catch (err) {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Exception: ' + err.message })
+    };
+  }
+};
