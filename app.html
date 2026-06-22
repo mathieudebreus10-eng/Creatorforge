@@ -518,6 +518,17 @@
         <button onclick="setIncludeText(true)" id="textOn" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:12px;font-weight:700;padding:10px;cursor:pointer">🔤 With Text<br><span style="font-size:10px;font-weight:400;opacity:0.8">Baked into image</span></button>
       </div>
       <input id="thumbText" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:14px;padding:12px;outline:none" placeholder="Ex: CHANGED MY LIFE">
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text Color</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="colorPicker">
+          <button onclick="setTextColor('#FFD700',this)" style="width:36px;height:36px;border-radius:50%;background:#FFD700;border:3px solid #fff;cursor:pointer" title="Yellow"></button>
+          <button onclick="setTextColor('#FFFFFF',this)" style="width:36px;height:36px;border-radius:50%;background:#FFFFFF;border:3px solid transparent;cursor:pointer" title="White"></button>
+          <button onclick="setTextColor('#FF4444',this)" style="width:36px;height:36px;border-radius:50%;background:#FF4444;border:3px solid transparent;cursor:pointer" title="Red"></button>
+          <button onclick="setTextColor('#00E676',this)" style="width:36px;height:36px;border-radius:50%;background:#00E676;border:3px solid transparent;cursor:pointer" title="Green"></button>
+          <button onclick="setTextColor('#FF9800',this)" style="width:36px;height:36px;border-radius:50%;background:#FF9800;border:3px solid transparent;cursor:pointer" title="Orange"></button>
+          <button onclick="setTextColor('#00BFFF',this)" style="width:36px;height:36px;border-radius:50%;background:#00BFFF;border:3px solid transparent;cursor:pointer" title="Blue"></button>
+        </div>
+      </div>
     </div>
 
     <div style="margin-bottom:14px">
@@ -852,6 +863,13 @@ let thumbMode = 'ai';
 let thumbFormat = 'horizontal';
 let includeText = false;
 let currentThumbConcept = {};
+let textColor = '#FFD700';
+
+function setTextColor(color, btn) {
+  textColor = color;
+  document.querySelectorAll('#colorPicker button').forEach(b => b.style.border = '3px solid transparent');
+  btn.style.border = '3px solid #fff';
+}
 
 function setIncludeText(val) {
   includeText = val;
@@ -1004,7 +1022,7 @@ async function generateThumbnail() {
     // Draw text on top using Canvas only if user chose "With Text"
     if (includeText && text && text.trim().length > 0) {
       try {
-        const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat);
+        const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat, textColor);
         document.getElementById('thumbImage').src = finalImage;
       } catch (canvasErr) {
         console.error('Canvas error:', canvasErr);
@@ -1024,7 +1042,7 @@ async function generateThumbnail() {
   }
 }
 
-function drawTextOnImage(imageUrl, text, format) {
+function drawTextOnImage(imageUrl, text, format, color = '#FFD700') {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -1072,7 +1090,7 @@ function drawTextOnImage(imageUrl, text, format) {
         ctx.lineJoin = 'round';
         ctx.strokeText(line, x, y);
 
-        ctx.fillStyle = '#FFD700';
+        ctx.fillStyle = color;
         ctx.fillText(line, x, y);
       });
 
