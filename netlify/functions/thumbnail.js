@@ -1,76 +1,11 @@
 function parseBase64Image(dataUrl) {
   const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!match) return null;
-  return { mime: match[1], data: dataUrl };
-}
-
-async function pollPrediction(predictionId, token, maxAttempts = 8) {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const res = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    const data = await res.json();
-
-    if (data.status === 'succeeded') {
-      return { success: true, output: data.output };
-    }
-    if (data.status === 'failed' || data.status === 'canceled') {
-      return { success: false, error: data.error || 'Prediction failed' };
-    }
-    // status is 'starting' or 'processing' — keep polling
-  }
-  return { success: false, error: 'STILL_PROCESSING', predictionId };
+  return { mime: match[1], base64: match[2] };
 }
 
 exports.handler = async function(event, context) {
   try {
-    // Handle status-check requests for ongoing Replicate predictions
-    if (event.httpMethod === 'GET' && event.queryStringParameters && event.queryStringParameters.checkId) {
-      const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
-      const predictionId = event.queryStringParameters.checkId;
-
-      const res = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-        headers: { 'Authorization': 'Bearer ' + REPLICATE_API_TOKEN }
-      });
-      const data = await res.json();
-
-      if (data.status === 'succeeded') {
-        const replicateUrl = Array.isArray(data.output) ? data.output[0] : data.output;
-        // Download and convert to base64 to avoid CORS/expiry issues with the temporary Replicate URL
-        try {
-          const imgRes = await fetch(replicateUrl);
-          const imgBuffer = await imgRes.arrayBuffer();
-          const base64 = Buffer.from(imgBuffer).toString('base64');
-          const contentType = imgRes.headers.get('content-type') || 'image/png';
-          return {
-            statusCode: 200,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageUrl: `data:${contentType};base64,${base64}` })
-          };
-        } catch (downloadErr) {
-          return {
-            statusCode: 200,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageUrl: replicateUrl })
-          };
-        }
-      }
-      if (data.status === 'failed' || data.status === 'canceled') {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: data.error || 'Generation failed' })
-        };
-      }
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ processing: true, predictionId })
-      };
-    }
-
     if (event.httpMethod !== 'POST') {
       return {
         statusCode: 200,
@@ -87,8 +22,14 @@ exports.handler = async function(event, context) {
     }
 
     const body = JSON.parse(event.body);
-    const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
-    const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Missing GEMINI_API_KEY env variable' })
+      };
+    }
 
     const {
       customPrompt = '',
@@ -97,29 +38,39 @@ exports.handler = async function(event, context) {
       emotion = 'confident',
       style = 'cinematic, high contrast',
       format = 'horizontal',
+      includeText = false,
+      text_overlay = '',
       imageBase64 = null
     } = body;
 
-    const formatContext = format === 'square'
-      ? 'Professional channel logo, profile picture, centered composition, clean and iconic'
-      : 'Professional YouTube thumbnail, high-CTR viral design';
+    const formatDescriptions = {
+      horizontal: 'wide 16:9 horizontal YouTube thumbnail composition',
+      vertical: 'tall 9:16 vertical format for YouTube Shorts',
+      square: 'square 1:1 format for a channel logo or profile picture'
+    };
+    const formatDesc = formatDescriptions[format] || formatDescriptions.horizontal;
 
     const visualDescription = customPrompt.length > 0
       ? customPrompt
-      : `${concept}. Background: ${background}. Mood: ${emotion}`;
+      : `${concept}. Background: ${background}. Mood/emotion: ${emotion}`;
 
-    const finalPrompt = `${formatContext}. ${visualDescription}. Style: ${style}. Photorealistic, ultra sharp, high contrast, professional lighting, 8k quality. No text, no letters, no words in the image.`;
+    const textInstruction = includeText && text_overlay.trim().length > 0
+      ? ` Include this exact text rendered boldly and clearly in the image with strong contrast and a professional eye-catching font: "${text_overlay}".`
+      : ' Do not include any text, letters, or words in the image — keep it completely clean.';
 
-    // ============ UPLOAD MODE — use Replicate InstantID for real face consistency ============
+    let promptText;
     if (imageBase64) {
-      if (!REPLICATE_API_TOKEN) {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Missing REPLICATE_API_TOKEN env variable' })
-        };
-      }
+      // EDIT MODE — preserve the person's identity from the uploaded photo
+      promptText = `Using the person in the provided image, create a professional ${formatDesc}. Keep the SAME person — preserve their exact facial features, identity, and likeness precisely. Scene: ${visualDescription}. Style: ${style}.${textInstruction} Make it photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize YouTube clicks.`;
+    } else {
+      // GENERATE MODE — from scratch
+      promptText = `Create a professional ${formatDesc}. ${visualDescription}. Style: ${style}.${textInstruction} Photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize YouTube clicks, 8k quality.`;
+    }
 
+    // Build the request parts
+    const parts = [{ text: promptText }];
+
+    if (imageBase64) {
       const parsed = parseBase64Image(imageBase64);
       if (!parsed) {
         return {
@@ -128,136 +79,70 @@ exports.handler = async function(event, context) {
           body: JSON.stringify({ error: 'Invalid uploaded image format' })
         };
       }
-
-      const widths = { horizontal: 1024, vertical: 768, square: 1024 };
-      const heights = { horizontal: 576, vertical: 1024, square: 1024 };
-
-      const createRes = await fetch('https://api.replicate.com/v1/predictions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + REPLICATE_API_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          version: 'c98b2e7a196828d00955767813b81fc05c5c9b294c670c6d147d545fed4ceecf',
-          input: {
-            image: parsed.data,
-            prompt: finalPrompt,
-            width: widths[format] || 1024,
-            height: heights[format] || 576,
-            negative_prompt: 'text, letters, watermark, low quality, blurry, distorted face',
-            ip_adapter_scale: 0.8,
-            controlnet_conditioning_scale: 0.8,
-            num_inference_steps: 30,
-            guidance_scale: 5
-          }
-        })
-      });
-
-      const createData = await createRes.json();
-
-      if (createData.error) {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Replicate: ' + JSON.stringify(createData.error) })
-        };
-      }
-
-      if (!createData.id) {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Replicate did not return a prediction ID. Response: ' + JSON.stringify(createData).substring(0, 250) })
-        };
-      }
-
-      const result = await pollPrediction(createData.id, REPLICATE_API_TOKEN);
-
-      if (!result.success) {
-        if (result.error === 'STILL_PROCESSING') {
-          return {
-            statusCode: 200,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ processing: true, predictionId: result.predictionId })
-          };
+      parts.push({
+        inline_data: {
+          mime_type: parsed.mime,
+          data: parsed.base64
         }
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Replicate generation failed: ' + result.error })
-        };
-      }
-
-      const replicateUrl = Array.isArray(result.output) ? result.output[0] : result.output;
-      try {
-        const imgRes = await fetch(replicateUrl);
-        const imgBuffer = await imgRes.arrayBuffer();
-        const base64 = Buffer.from(imgBuffer).toString('base64');
-        const contentType = imgRes.headers.get('content-type') || 'image/png';
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrl: `data:${contentType};base64,${base64}` })
-        };
-      } catch (downloadErr) {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrl: replicateUrl })
-        };
-      }
+      });
     }
 
-    // ============ TEXT-TO-IMAGE MODE — use Stability AI (no photo needed) ============
-    if (!STABILITY_API_KEY) {
+    // Nano Banana = gemini-2.5-flash-image
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: parts }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Missing STABILITY_API_KEY env variable' })
+        body: JSON.stringify({ error: 'Gemini: ' + data.error.message })
       };
     }
 
-    const aspectRatios = { horizontal: '16:9', vertical: '9:16', square: '1:1' };
-    const aspect_ratio = aspectRatios[format] || '16:9';
-
-    const formData = new FormData();
-    formData.append('prompt', finalPrompt);
-    formData.append('aspect_ratio', aspect_ratio);
-    formData.append('output_format', 'png');
-
-    const apiResponse = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + STABILITY_API_KEY,
-        'Accept': 'application/json'
-      },
-      body: formData
-    });
-
-    if (!apiResponse.ok) {
-      const errText = await apiResponse.text();
+    if (!data.candidates || !data.candidates[0]) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Stability AI error: ' + errText.substring(0, 300) })
+        body: JSON.stringify({ error: 'No image returned: ' + JSON.stringify(data).substring(0, 250) })
       };
     }
 
-    const apiData = await apiResponse.json();
+    // Extract the generated image from the response parts
+    const responseParts = data.candidates[0].content.parts;
+    let imageData = null;
+    for (const part of responseParts) {
+      if (part.inline_data && part.inline_data.data) {
+        imageData = part.inline_data.data;
+        break;
+      }
+      if (part.inlineData && part.inlineData.data) {
+        imageData = part.inlineData.data;
+        break;
+      }
+    }
 
-    if (!apiData.image) {
+    if (!imageData) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No image in response' })
+        body: JSON.stringify({ error: 'No image data in response. The model may have refused. Response: ' + JSON.stringify(data).substring(0, 250) })
       };
     }
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl: `data:image/png;base64,${apiData.image}` })
+      body: JSON.stringify({ imageUrl: `data:image/png;base64,${imageData}` })
     };
 
   } catch (err) {
