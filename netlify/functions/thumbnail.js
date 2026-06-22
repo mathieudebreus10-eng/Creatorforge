@@ -55,19 +55,16 @@ exports.handler = async function(event, context) {
       : `${concept}. Background: ${background}. Mood/emotion: ${emotion}`;
 
     const textInstruction = includeText && text_overlay.trim().length > 0
-      ? ` Include this exact text rendered boldly and clearly in the image with strong contrast and a professional eye-catching font: "${text_overlay}".`
-      : ' Do not include any text, letters, or words in the image — keep it completely clean.';
+      ? ` Add this text ONCE, at the top of the image only, in large bold letters with strong outline: "${text_overlay}". Do NOT repeat this text anywhere else in the image. Only one single placement at the top. No duplicate text.`
+      : ' Do not include any text, letters, words or numbers anywhere in the image. Keep it completely clean.';
 
     let promptText;
     if (imageBase64) {
-      // EDIT MODE — preserve the person's identity from the uploaded photo
       promptText = `Using the person in the provided image, create a professional ${formatDesc}. Keep the SAME person — preserve their exact facial features, identity, and likeness precisely. Scene: ${visualDescription}. Style: ${style}.${textInstruction} Make it photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize YouTube clicks.`;
     } else {
-      // GENERATE MODE — from scratch
       promptText = `Create a professional ${formatDesc}. ${visualDescription}. Style: ${style}.${textInstruction} Photorealistic, ultra sharp, high contrast, professional lighting, designed to maximize YouTube clicks, 8k quality.`;
     }
 
-    // Build the request parts
     const parts = [{ text: promptText }];
 
     if (imageBase64) {
@@ -87,7 +84,6 @@ exports.handler = async function(event, context) {
       });
     }
 
-    // Nano Banana 2 = gemini-3.1-flash-image (current model as of June 2026)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -117,7 +113,6 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // Extract the generated image from the response parts
     const responseParts = data.candidates[0].content.parts;
     let imageData = null;
     for (const part of responseParts) {
