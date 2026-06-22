@@ -471,7 +471,6 @@
     <button class="copy-btn" onclick="copyHashtags()">Copy All Hashtags</button>
   </div>
 
-  <!-- TAGS DO YOUTUBE -->
   <div class="result-card">
     <div class="section-title">🏷️ YouTube Tags</div>
     <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Paste these in the YouTube Tags field when uploading your video</p>
@@ -600,7 +599,6 @@ async function generate() {
 }
 
 function renderResults(data) {
-  // Titles
   const tc = document.getElementById('titlesContainer');
   tc.innerHTML = data.titles.map((t, i) => `
     <div class="title-item" onclick="copyText('${escapeQuotes(t)}', this)">
@@ -609,11 +607,9 @@ function renderResults(data) {
     </div>
   `).join('');
 
-  // Hooks
   document.getElementById('hooksContainer').innerHTML =
     data.hooks.map(h => `<div class="hook-item">"${h}"</div>`).join('');
 
-  // Script
   const sc = document.getElementById('scriptContainer');
   let scriptHtml = `
     <div class="script-section">
@@ -641,19 +637,15 @@ function renderResults(data) {
   `;
   sc.innerHTML = scriptHtml;
 
-  // Description
   document.getElementById('descriptionContainer').innerText = data.seo_description;
 
-  // Hashtags
   document.getElementById('hashtagsContainer').innerHTML =
     data.hashtags.map(h => `<span class="hashtag">${h}</span>`).join('');
 
-  // YouTube Tags
   const tags = data.tags || [];
   document.getElementById('tagsContainer').innerHTML =
     tags.map(t => `<span class="tag-item">${t}</span>`).join('');
 
-  // Thumbnail
   const th = data.thumbnail;
   document.getElementById('thumbnailContainer').innerHTML = `
     <div class="thumb-item">
@@ -674,7 +666,6 @@ function renderResults(data) {
     </div>
   `;
 
-  // Show thumbnail generator and populate with concept data
   currentThumbConcept = data.thumbnail;
   document.getElementById('thumbText').value = data.thumbnail.text_overlay || '';
   document.getElementById('thumbnailGenCard').style.display = 'block';
@@ -915,47 +906,44 @@ function previewUpload(input) {
   reader.readAsDataURL(file);
 }
 
-// Crop/resize the uploaded photo to match the chosen thumbnail format BEFORE sending to the API
-function resizeImageToFormat(dataUrl, format) {
+function resizeImageToFormat(base64DataUrl, format) {
   return new Promise((resolve, reject) => {
+    const targetRatios = {
+      horizontal: 16 / 9,
+      vertical: 9 / 16,
+      square: 1
+    };
+    const targetRatio = targetRatios[format] || 16 / 9;
+
     const img = new Image();
     img.onload = () => {
-      const targetRatios = {
-        horizontal: 16 / 9,
-        vertical: 9 / 16,
-        square: 1
-      };
-      const targetRatio = targetRatios[format] || 16 / 9;
+      let srcW = img.width, srcH = img.height;
+      let srcRatio = srcW / srcH;
 
-      let sx = 0, sy = 0, sw = img.width, sh = img.height;
-      const currentRatio = img.width / img.height;
-
-      if (currentRatio > targetRatio) {
-        // Image is too wide — crop sides
-        sw = img.height * targetRatio;
-        sx = (img.width - sw) / 2;
+      let cropW = srcW, cropH = srcH, cropX = 0, cropY = 0;
+      if (srcRatio > targetRatio) {
+        cropW = srcH * targetRatio;
+        cropX = (srcW - cropW) / 2;
       } else {
-        // Image is too tall — crop top/bottom
-        sh = img.width / targetRatio;
-        sy = (img.height - sh) / 2;
+        cropH = srcW / targetRatio;
+        cropY = (srcH - cropH) / 2;
       }
 
-      // Output size based on format (capped for API limits)
       let outW, outH;
-      if (format === 'vertical') { outW = 1024; outH = 1820; }
-      else if (format === 'square') { outW = 1024; outH = 1024; }
-      else { outW = 1820; outH = 1024; }
+      if (format === 'horizontal') { outW = 1344; outH = 756; }
+      else if (format === 'vertical') { outW = 756; outH = 1344; }
+      else { outW = 1024; outH = 1024; }
 
       const canvas = document.createElement('canvas');
       canvas.width = outW;
       canvas.height = outH;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
 
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
+      resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = () => reject(new Error('Failed to load uploaded photo'));
-    img.src = dataUrl;
+    img.onerror = () => reject(new Error('Failed to load uploaded image'));
+    img.src = base64DataUrl;
   });
 }
 
@@ -971,6 +959,9 @@ async function generateThumbnail() {
   try {
     const customPrompt = document.getElementById('thumbPrompt').value.trim();
 
+    // ✅ FIX: Always send includeText: false to Gemini
+    // Text is drawn by Canvas after the image is generated — never by the AI
+    // This prevents duplicate/repeated text in the final thumbnail
     let body = {
       concept: customPrompt || currentThumbConcept.main_image || 'professional YouTube creator',
       text_overlay: text,
@@ -979,7 +970,7 @@ async function generateThumbnail() {
       style: style,
       format: thumbFormat,
       customPrompt: customPrompt,
-      includeText: includeText
+      includeText: false  // ← ALWAYS false: Canvas handles text overlay
     };
 
     if (thumbMode === 'upload') {
@@ -992,11 +983,8 @@ async function generateThumbnail() {
         return;
       }
       const rawBase64 = await fileToBase64(file);
-      // Crop/resize the uploaded photo to match the chosen format BEFORE sending —
-      // the structure endpoint follows the input image's aspect ratio
       const base64 = await resizeImageToFormat(rawBase64, thumbFormat);
       body.imageBase64 = base64;
-      // Reinforce identity preservation in the prompt
       body.concept = (body.concept || '') + ', same person, same face, preserve facial identity and features exactly';
     }
 
@@ -1013,7 +1001,7 @@ async function generateThumbnail() {
       throw new Error('No image received. Please try again.');
     }
 
-    // If user wants text, draw it on top using Canvas (perfect spelling, no AI text errors)
+    // Draw text on top using Canvas only if user chose "With Text"
     if (includeText && text && text.trim().length > 0) {
       try {
         const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat);
@@ -1046,7 +1034,6 @@ function drawTextOnImage(imageUrl, text, format) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
 
-      // Text styling based on format
       const fontSize = format === 'square' ? img.width * 0.09 : img.width * 0.085;
       const padding = img.width * 0.04;
 
@@ -1054,7 +1041,6 @@ function drawTextOnImage(imageUrl, text, format) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // Word wrap if text is long
       const maxWidth = img.width * 0.85;
       const words = text.toUpperCase().split(' ');
       let lines = [];
@@ -1081,13 +1067,11 @@ function drawTextOnImage(imageUrl, text, format) {
         const y = startY + (i * lineHeight) + (lineHeight / 2);
         const x = img.width / 2;
 
-        // Strong outline for readability
         ctx.lineWidth = fontSize * 0.12;
         ctx.strokeStyle = '#000000';
         ctx.lineJoin = 'round';
         ctx.strokeText(line, x, y);
 
-        // Yellow/gold fill — classic high-CTR YouTube thumbnail style
         ctx.fillStyle = '#FFD700';
         ctx.fillText(line, x, y);
       });
@@ -1097,67 +1081,6 @@ function drawTextOnImage(imageUrl, text, format) {
     img.onerror = () => reject(new Error('Failed to load image for text overlay'));
     img.src = imageUrl;
   });
-}
-
-function resizeImageToFormat(base64DataUrl, format) {
-  return new Promise((resolve, reject) => {
-    const targetRatios = {
-      horizontal: 16 / 9,
-      vertical: 9 / 16,
-      square: 1
-    };
-    const targetRatio = targetRatios[format] || 16 / 9;
-
-    const img = new Image();
-    img.onload = () => {
-      let srcW = img.width, srcH = img.height;
-      let srcRatio = srcW / srcH;
-
-      // Crop the source image to match target ratio (center crop)
-      let cropW = srcW, cropH = srcH, cropX = 0, cropY = 0;
-      if (srcRatio > targetRatio) {
-        // source is wider than target — crop sides
-        cropW = srcH * targetRatio;
-        cropX = (srcW - cropW) / 2;
-      } else {
-        // source is taller than target — crop top/bottom
-        cropH = srcW / targetRatio;
-        cropY = (srcH - cropH) / 2;
-      }
-
-      // Output size based on format (reasonable resolution, max ~1.2MP)
-      let outW, outH;
-      if (format === 'horizontal') { outW = 1344; outH = 756; }
-      else if (format === 'vertical') { outW = 756; outH = 1344; }
-      else { outW = 1024; outH = 1024; }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
-
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = () => reject(new Error('Failed to load uploaded image'));
-    img.src = base64DataUrl;
-  });
-}
-
-async function pollThumbnailStatus(predictionId, maxAttempts = 45) {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    try {
-      const res = await fetch(`/.netlify/functions/thumbnail?checkId=${predictionId}`);
-      const data = await res.json();
-      if (data.imageUrl) return data;
-      if (data.error) return data;
-      // still processing, keep polling
-    } catch (e) {
-      // network hiccup, keep trying
-    }
-  }
-  return { error: 'Image generation timed out after 90 seconds. The face-consistency model can be slow — please try again.' };
 }
 
 function fileToBase64(file) {
