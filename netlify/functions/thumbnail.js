@@ -87,9 +87,9 @@ exports.handler = async function(event, context) {
       });
     }
 
-    // Nano Banana = gemini-2.5-flash-image-preview
+    // Nano Banana 2 = gemini-3.1-flash-image (current model as of June 2026)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
