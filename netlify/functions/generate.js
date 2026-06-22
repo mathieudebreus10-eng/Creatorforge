@@ -3,7 +3,7 @@ exports.handler = async function(event, context) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const { topic, niche, tone, language } = JSON.parse(event.body);
+  const { topic, niche, tone, language, token } = JSON.parse(event.body);
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const lang = language || 'English';
@@ -14,6 +14,36 @@ exports.handler = async function(event, context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: 'Missing GEMINI_API_KEY env variable' })
     };
+  }
+
+  // ─── CHECK & INCREMENT USAGE LIMIT ───────────────────────────────────────
+  if (token) {
+    try {
+      const usageRes = await fetch(`${process.env.URL}/.netlify/functions/check-usage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, action: 'increment' })
+      });
+      const usageData = await usageRes.json();
+
+      if (usageData.limit_reached) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: usageData.error, limit_reached: true, plan: usageData.plan })
+        };
+      }
+      if (usageData.error && !usageData.allowed) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: usageData.error })
+        };
+      }
+    } catch (e) {
+      // If usage check fails, allow generation (don't block user)
+      console.log('Usage check failed:', e.message);
+    }
   }
 
   const prompt = `You are a world-class YouTube growth strategist and viral content expert with 10+ years experience helping creators grow to millions of subscribers.
@@ -57,7 +87,6 @@ Respond with ONLY this JSON structure, nothing else:
     return new Promise(r => setTimeout(r, ms));
   }
 
-  // ─── GEMINI ──────────────────────────────────────────────────────────────
   async function tryGemini(model) {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
@@ -80,7 +109,6 @@ Respond with ONLY this JSON structure, nothing else:
     return data.candidates[0].content.parts[0].text;
   }
 
-  // ─── GPT-4.1 MINI FALLBACK ───────────────────────────────────────────────
   async function tryGPT() {
     if (!OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -105,23 +133,15 @@ Respond with ONLY this JSON structure, nothing else:
   function parseAndBuild(text) {
     const clean = text.replace(/```json|```/g, '').trim();
     const result = JSON.parse(clean);
-
     result.tags = (result.hashtags || [])
       .map(h => h.replace(/#/g, '').trim())
       .filter(t => t.length > 0);
-
     const topicTags = topic.split(' ')
       .map(w => w.trim().toLowerCase())
       .filter(w => w.length > 3);
-
     result.tags = [...new Set([...result.tags, ...topicTags])].slice(0, 15);
     return result;
   }
-
-  // ─── MAIN LOGIC ──────────────────────────────────────────────────────────
-  // 1st: Gemini 2.5 Flash (principal)
-  // 2nd: Gemini 2.0 Flash (fallback estável)
-  // 3rd: GPT-4.1 Mini (fallback forte)
 
   const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
   let lastError = '';
