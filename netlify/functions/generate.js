@@ -157,7 +157,8 @@ Respond with ONLY this JSON structure, nothing else:
           body: JSON.stringify(result)
         };
       } catch (err) {
-        lastError = err.message || JSON.stringify(err);
+        lastError = `[${model} attempt ${attempt}] ${err.message || JSON.stringify(err)}`;
+        console.log('Gemini error:', lastError);
         const code = err.code;
         if (code === 429 || code === 503 || code === 500) {
           await sleep(attempt * 2000);
@@ -184,6 +185,6 @@ Respond with ONLY this JSON structure, nothing else:
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ error: 'AI is under heavy load. Please try again in a few minutes. (' + lastError + ')' })
+    body: JSON.stringify({ error: 'Erro detalhado: ' + lastError })
   };
 };
