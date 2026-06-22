@@ -1009,18 +1009,8 @@ async function generateThumbnail() {
     let data = await response.json();
     if (data.error) throw new Error(data.error);
 
-    // If Replicate is still processing, poll from the browser until it's done
-    if (data.processing) {
-      const pid = data.predictionId;
-      if (!pid) {
-        throw new Error('Processing started but no tracking ID returned. Please try again.');
-      }
-      data = await pollThumbnailStatus(pid);
-      if (data.error) throw new Error(data.error);
-    }
-
     if (!data.imageUrl) {
-      throw new Error('No image URL received. Response: ' + JSON.stringify(data).substring(0, 200));
+      throw new Error('No image received. Please try again.');
     }
 
     // If user wants text, draw it on top using Canvas (perfect spelling, no AI text errors)
