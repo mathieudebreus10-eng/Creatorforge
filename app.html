@@ -507,7 +507,7 @@
 
     <div style="margin-bottom:14px">
       <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Describe your thumbnail <span style="color:#555;font-weight:400">(optional)</span></div>
-      <textarea id="thumbPrompt" rows="3" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;padding:12px;outline:none;resize:none" placeholder="Ex: A woman singing gospel in a church with heavenly light, dramatic and emotional, golden tones..."></textarea>
+      <textarea id="thumbPrompt" rows="3" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;padding:12px;outline:none;resize:none" placeholder="Ex: A woman singing gospel on stage, heavenly light, golden tones, text color white..."></textarea>
       <div style="font-size:10px;color:#555;margin-top:4px">Leave empty to use the AI-generated concept automatically</div>
     </div>
 
@@ -519,15 +519,20 @@
       </div>
       <input id="thumbText" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:14px;padding:12px;outline:none" placeholder="Ex: CHANGED MY LIFE">
       <div style="margin-top:10px">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text Color</div>
-        <select id="textColorSelect" onchange="setTextColor(this.value)" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;padding:10px;outline:none">
-          <option value="#FFD700">🟡 Yellow (High CTR)</option>
-          <option value="#FFFFFF">⚪ White</option>
-          <option value="#FF4444">🔴 Red</option>
-          <option value="#FF9800">🟠 Orange</option>
-          <option value="#00E676">🟢 Green</option>
-          <option value="#00BFFF">🔵 Blue</option>
-        </select>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text Color</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px" id="colorPicker">
+          <button onclick="setTextColor('#FFD700',this)" style="background:#FFD700;border:3px solid #fff;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#000" title="Yellow">Yellow</button>
+          <button onclick="setTextColor('#FFFFFF',this)" style="background:#FFFFFF;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#000" title="White">White</button>
+          <button onclick="setTextColor('#FF4444',this)" style="background:#FF4444;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#fff" title="Red">Red</button>
+          <button onclick="setTextColor('#FF9800',this)" style="background:#FF9800;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#000" title="Orange">Orange</button>
+          <button onclick="setTextColor('#FFB6C1',this)" style="background:#FFB6C1;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#000" title="Pink">Pink</button>
+          <button onclick="setTextColor('#00E676',this)" style="background:#00E676;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#000" title="Green">Green</button>
+          <button onclick="setTextColor('#00BFFF',this)" style="background:#00BFFF;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#000" title="Blue">Blue</button>
+          <button onclick="setTextColor('#A855F7',this)" style="background:#A855F7;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#fff" title="Purple">Purple</button>
+          <button onclick="setTextColor('#F4C430',this)" style="background:#F4C430;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#000" title="Gold">Gold</button>
+          <button onclick="setTextColor('#000000',this)" style="background:#000000;border:3px solid transparent;border-radius:8px;height:32px;cursor:pointer;font-size:10px;font-weight:700;color:#fff" title="Black">Black</button>
+        </div>
+        <div style="font-size:10px;color:#555;margin-top:6px">💡 Or type the color in the description above — e.g. "text color gold"</div>
       </div>
     </div>
 
@@ -865,8 +870,31 @@ let includeText = false;
 let currentThumbConcept = {};
 let textColor = '#FFD700';
 
-function setTextColor(color) {
+function setTextColor(color, btn) {
   textColor = color;
+  document.querySelectorAll('#colorPicker button').forEach(b => b.style.border = '3px solid transparent');
+  if (btn) btn.style.border = '3px solid #fff';
+}
+
+function extractColorFromPrompt(prompt) {
+  const colorMap = {
+    'gold': '#F4C430',
+    'golden': '#F4C430',
+    'yellow': '#FFD700',
+    'white': '#FFFFFF',
+    'red': '#FF4444',
+    'orange': '#FF9800',
+    'pink': '#FFB6C1',
+    'green': '#00E676',
+    'blue': '#00BFFF',
+    'purple': '#A855F7',
+    'black': '#000000'
+  };
+  const lower = (prompt || '').toLowerCase();
+  for (const [word, hex] of Object.entries(colorMap)) {
+    if (lower.includes('text color ' + word) || lower.includes('color ' + word)) return hex;
+  }
+  return null; // no color found in prompt
 }
 
 function setIncludeText(val) {
@@ -974,6 +1002,12 @@ async function generateThumbnail() {
 
   try {
     const customPrompt = document.getElementById('thumbPrompt').value.trim();
+
+    // Auto-detect color from prompt if user typed it (e.g. "text color gold")
+    const promptColor = extractColorFromPrompt(customPrompt);
+    if (promptColor) {
+      textColor = promptColor;
+    }
 
     // ✅ FIX: Always send includeText: false to Gemini
     // Text is drawn by Canvas after the image is generated — never by the AI
