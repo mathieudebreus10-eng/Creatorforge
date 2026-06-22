@@ -581,7 +581,18 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// Supabase client for session token
+const SUPABASE_URL = 'https://fvnjoaedwuwtuiulqhcw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_-yEONjxLyxpHBM1QDRe4Zw_a3QTiH5b';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function getToken() {
+  const { data: { session } } = await _sb.auth.getSession();
+  return session ? session.access_token : null;
+}
+
 async function generate() {
   const topic = document.getElementById('topicInput').value.trim();
   const niche = document.getElementById('nicheSelect').value;
@@ -596,14 +607,19 @@ async function generate() {
   document.getElementById('generateBtn').disabled = true;
 
   try {
+    const token = await getToken();
     const response = await fetch('/.netlify/functions/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, niche, tone, language })
+      body: JSON.stringify({ topic, niche, tone, language, token })
     });
 
     const data = await response.json();
     if (data.error) throw new Error(data.error);
+    if (data.limit_reached) {
+      showError(`🔒 You've reached your ${data.plan} plan limit this month. Upgrade your plan to continue generating content!`);
+      return;
+    }
     renderResults(data);
 
   } catch (err) {
@@ -1009,6 +1025,8 @@ async function generateThumbnail() {
       textColor = promptColor;
     }
 
+    const token = await getToken();
+
     // ✅ FIX: Always send includeText: false to Gemini
     // Text is drawn by Canvas after the image is generated — never by the AI
     // This prevents duplicate/repeated text in the final thumbnail
@@ -1020,7 +1038,8 @@ async function generateThumbnail() {
       style: style,
       format: thumbFormat,
       customPrompt: customPrompt,
-      includeText: false  // ← ALWAYS false: Canvas handles text overlay
+      includeText: false,  // ← ALWAYS false: Canvas handles text overlay
+      token: token
     };
 
     if (thumbMode === 'upload') {
