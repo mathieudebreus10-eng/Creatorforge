@@ -143,7 +143,7 @@ Respond with ONLY this JSON structure, nothing else:
     return result;
   }
 
-  const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const geminiModels = ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash'];
   let lastError = '';
 
   for (const model of geminiModels) {
