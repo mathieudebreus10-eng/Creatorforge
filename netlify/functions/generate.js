@@ -5,6 +5,7 @@ exports.handler = async function(event, context) {
 
   const { topic, niche, tone, language } = JSON.parse(event.body);
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const lang = language || 'English';
 
   if (!GEMINI_API_KEY) {
@@ -52,9 +53,14 @@ Respond with ONLY this JSON structure, nothing else:
 
 {"titles":["viral title 1","viral title 2","viral title 3","viral title 4","viral title 5"],"hooks":["powerful hook 1","powerful hook 2","powerful hook 3"],"seo_description":"150-200 word SEO description","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5","#hashtag6","#hashtag7","#hashtag8","#hashtag9","#hashtag10"],"script":{"hook":"Powerful 15-second hook script","intro":"30-60 second intro","body":[{"section":"Key Point 1","content":"Script content"},{"section":"Key Point 2","content":"Script content"},{"section":"Key Point 3","content":"Script content"}],"outro":"Strong call to action"},"thumbnail":{"background":"Background description","main_image":"Main visual element","text_overlay":"3-4 WORD HOOK","emotion":"Target emotion"}}`;
 
-  try {
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  // ─── GEMINI ──────────────────────────────────────────────────────────────
+  async function tryGemini(model) {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,40 +74,38 @@ Respond with ONLY this JSON structure, nothing else:
         })
       }
     );
-
     const data = await response.json();
+    if (data.error) throw { code: data.error.code, message: data.error.message };
+    if (!data.candidates || !data.candidates.length) throw { code: 500, message: 'No candidates' };
+    return data.candidates[0].content.parts[0].text;
+  }
 
-    if (data.error) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Gemini: ' + data.error.message })
-      };
-    }
+  // ─── GPT-4.1 MINI FALLBACK ───────────────────────────────────────────────
+  async function tryGPT() {
+    if (!OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.85,
+        max_tokens: 8000,
+        response_format: { type: 'json_object' }
+      })
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.choices[0].message.content;
+  }
 
-    if (!data.candidates || !data.candidates.length) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No candidates returned: ' + JSON.stringify(data).substring(0, 300) })
-      };
-    }
-
-    const text = data.candidates[0].content.parts[0].text;
+  function parseAndBuild(text) {
     const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
 
-    let result;
-    try {
-      result = JSON.parse(clean);
-    } catch (parseErr) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'JSON parse failed. Raw text: ' + clean.substring(0, 300) })
-      };
-    }
-
-    // Gerar tags a partir das hashtags
     result.tags = (result.hashtags || [])
       .map(h => h.replace(/#/g, '').trim())
       .filter(t => t.length > 0);
@@ -111,18 +115,55 @@ Respond with ONLY this JSON structure, nothing else:
       .filter(w => w.length > 3);
 
     result.tags = [...new Set([...result.tags, ...topicTags])].slice(0, 15);
+    return result;
+  }
 
+  // ─── MAIN LOGIC ──────────────────────────────────────────────────────────
+  // 1st: Gemini 2.5 Flash (principal)
+  // 2nd: Gemini 2.0 Flash (fallback estável)
+  // 3rd: GPT-4.1 Mini (fallback forte)
+
+  const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  let lastError = '';
+
+  for (const model of geminiModels) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const text = await tryGemini(model);
+        const result = parseAndBuild(text);
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(result)
+        };
+      } catch (err) {
+        lastError = err.message || JSON.stringify(err);
+        const code = err.code;
+        if (code === 429 || code === 503 || code === 500) {
+          await sleep(attempt * 2000);
+          continue;
+        }
+        break;
+      }
+    }
+  }
+
+  // GPT-4.1 Mini fallback
+  try {
+    const text = await tryGPT();
+    const result = parseAndBuild(text);
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(result)
     };
-
-  } catch (err) {
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Caught exception: ' + err.message })
-    };
+  } catch (gptErr) {
+    lastError = gptErr.message;
   }
+
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ error: 'AI is under heavy load. Please try again in a few minutes. (' + lastError + ')' })
+  };
 };
