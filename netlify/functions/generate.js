@@ -157,7 +157,13 @@ Respond with ONLY this JSON structure, nothing else:
         })
       }
     );
-    const data = await response.json();
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      throw { code: response.status, message: `Non-JSON response (${response.status}): ${raw.substring(0, 100)}` };
+    }
     if (data.error) throw { code: data.error.code, message: data.error.message };
     if (!data.candidates || !data.candidates.length) throw { code: 500, message: 'No candidates' };
     return data.candidates[0].content.parts[0].text;
@@ -179,7 +185,13 @@ Respond with ONLY this JSON structure, nothing else:
         response_format: { type: 'json_object' }
       })
     });
-    const data = await response.json();
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      throw new Error(`GPT non-JSON response: ${raw.substring(0, 100)}`);
+    }
     if (data.error) throw new Error(data.error.message);
     return data.choices[0].message.content;
   }
