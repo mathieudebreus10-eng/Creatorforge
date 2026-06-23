@@ -18,7 +18,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overf
 nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(6,6,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;}
 .nav-logo{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--p),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .nav-badge{font-size:9px;background:var(--p);color:#fff;padding:2px 7px;border-radius:20px;font-weight:700;-webkit-text-fill-color:#fff;margin-left:6px}
+.nav-links{display:flex;align-items:center;gap:28px}
+.nav-links a{color:var(--light);font-size:14px;font-weight:500;text-decoration:none;transition:color 0.2s;cursor:pointer}
+.nav-links a:hover{color:var(--p2)}
 .nav-cta{background:linear-gradient(135deg,var(--p),#9b59fc);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:10px 18px;cursor:pointer;font-family:'Inter',sans-serif}
+.menu-toggle{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
+.mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;z-index:998;background:rgba(6,6,15,0.98);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);flex-direction:column;padding:16px 24px;gap:4px}
+.mobile-menu.open{display:flex}
+.mobile-menu a{color:var(--light);font-size:15px;font-weight:500;text-decoration:none;padding:12px 8px;border-bottom:1px solid var(--border);cursor:pointer}
+.mobile-menu a:last-child{border:none}
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;position:relative;overflow:hidden;}
 .hero-glow{position:absolute;top:20%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(124,92,252,0.15) 0%,transparent 70%);pointer-events:none;}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.3);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;color:var(--p2);margin-bottom:28px;letter-spacing:0.06em;text-transform:uppercase;}
@@ -100,7 +108,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
 .footer-copy{font-size:12px;color:var(--muted)}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .float{animation:float 4s ease-in-out infinite}
-@media(max-width:600px){.stats{grid-template-columns:1fr 1fr 1fr}.stat-num{font-size:24px}}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr 1fr}.stat-num{font-size:24px}.nav-links{display:none}.menu-toggle{display:block}}
 </style>
 </head>
 <body>
@@ -111,28 +119,43 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
     <span style="font-size:18px;margin-left:4px">✦</span>
     <span class="nav-badge">PRO</span>
   </div>
-  <button class="nav-cta" onclick="window.location.href='auth.html'">Start Free →</button>
+  <div class="nav-links">
+    <a onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Features</a>
+    <a onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">How it works</a>
+    <a onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Pricing</a>
+    <a onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Contact</a>
+    <button class="nav-cta" onclick="window.location.href='auth.html'">Start Free →</button>
+  </div>
+  <button class="menu-toggle" onclick="toggleMenu()">☰</button>
 </nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a onclick="goSection('features')">🔧 Features</a>
+  <a onclick="goSection('how')">📋 How it works</a>
+  <a onclick="goSection('pricing')">💰 Pricing</a>
+  <a onclick="goSection('contact')">✉️ Contact</a>
+  <a onclick="window.location.href='auth.html'" style="color:var(--p2);font-weight:700">✨ Start Free →</a>
+</div>
 
 <section class="hero">
   <div class="hero-glow"></div>
   <div class="hero-eyebrow">✦ For YouTube Creators</div>
   <h1>Your Personal<br><span class="line2">YouTube AI Agent.</span></h1>
-  <p class="hero-sub">Type your topic. Your AI agent instantly builds your complete video content package — titles, script, SEO, hashtags, YouTube tags, and thumbnail idea.</p>
+  <p class="hero-sub">Type your topic. Your AI agent instantly builds your complete video content package — titles, script, SEO, hashtags, YouTube tags, and a ready-to-download thumbnail.</p>
   <div class="hero-pills">
     <div class="pill">🔥 Viral Titles</div>
     <div class="pill">📝 Full Script</div>
     <div class="pill">🔍 SEO Description</div>
     <div class="pill"># Hashtags</div>
     <div class="pill">🏷️ YouTube Tags</div>
-    <div class="pill">🖼 Thumbnail Idea</div>
+    <div class="pill">🎨 AI Thumbnail</div>
     <div class="pill">⚡ Hook Variations</div>
   </div>
   <div class="hero-btns">
     <button class="btn-primary" onclick="window.location.href='auth.html'">✨ Start for Free</button>
     <button class="btn-ghost" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">See it in action ↓</button>
   </div>
-  <p class="hero-note">No credit card required · 3 free generations · Cancel anytime</p>
+  <p class="hero-note">No credit card required · 10 free generations · Cancel anytime</p>
 </section>
 
 <section class="demo-section" id="demo">
@@ -168,8 +191,8 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
         </div>
       </div>
       <div class="demo-row" style="border:1px solid rgba(124,92,252,0.3)">
-        <div class="demo-icon">🖼</div>
-        <div><div class="demo-label">Thumbnail Concept</div><div class="demo-value">Dark gradient bg · Creator looking focused · Bold text: <strong style="color:var(--gold)">"CHANGED MY LIFE"</strong> · Emotion: Curiosity & motivation</div></div>
+        <div class="demo-icon">🎨</div>
+        <div><div class="demo-label">AI-Generated Thumbnail</div><div class="demo-value">A real, ready-to-download thumbnail image — generated by AI with your photo or a custom scene, plus bold text overlay. <strong style="color:var(--gold)">Download and upload straight to YouTube.</strong></div></div>
       </div>
     </div>
   </div>
@@ -177,11 +200,11 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
 
 <div class="stats">
   <div class="stat"><div class="stat-num">10s</div><div class="stat-label">Generation time</div></div>
-  <div class="stat"><div class="stat-num">6x</div><div class="stat-label">More content assets</div></div>
+  <div class="stat"><div class="stat-num">7x</div><div class="stat-label">More content assets</div></div>
   <div class="stat"><div class="stat-num">5h</div><div class="stat-label">Saved per video</div></div>
 </div>
 
-<section class="features">
+<section class="features" id="features">
   <div class="section-eyebrow">Everything you need</div>
   <h2 class="section-title">One topic.<br>A complete content package.</h2>
   <p class="section-sub">Stop juggling 5 different tools. Tubervid gives you everything in one click.</p>
@@ -190,19 +213,19 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
     <div class="feature-card"><div class="feature-icon fi-cyan">📝</div><div class="feature-title">Full Video Script</div><div class="feature-desc">Hook → Intro → 3-point Body → Outro. Fully structured and ready to record.</div></div>
     <div class="feature-card"><div class="feature-icon fi-gold">🔍</div><div class="feature-title">SEO Description</div><div class="feature-desc">120–200 word descriptions crafted with keywords to help your video rank.</div></div>
     <div class="feature-card"><div class="feature-icon fi-green">⚡</div><div class="feature-title">3 Hook Variations</div><div class="feature-desc">Three powerful opening lines to grab attention in the first 5 seconds.</div></div>
-    <div class="feature-card"><div class="feature-icon fi-pink">🖼</div><div class="feature-title">Thumbnail Blueprint</div><div class="feature-desc">Visual concept ready to build in Canva in minutes.</div></div>
+    <div class="feature-card"><div class="feature-icon fi-pink">🎨</div><div class="feature-title">AI Thumbnail Generator</div><div class="feature-desc">Generates a real, downloadable thumbnail image with AI — upload your photo or create a scene from scratch, with bold text baked in.</div></div>
     <div class="feature-card"><div class="feature-icon fi-orange">#</div><div class="feature-title">10–15 Hashtags</div><div class="feature-desc">Mix of broad and niche hashtags to maximize discoverability.</div></div>
     <div class="feature-card"><div class="feature-icon fi-cyan">🏷️</div><div class="feature-title">YouTube Tags</div><div class="feature-desc">15 SEO backend tags ready to paste in the YouTube tags field when uploading.</div></div>
   </div>
 </section>
 
-<section class="how">
+<section class="how" id="how">
   <div class="section-eyebrow">Simple process</div>
   <h2 class="section-title" style="text-align:center">How it works</h2>
   <div class="steps">
     <div class="step"><div class="step-num">1</div><div><div class="step-title">Type your video topic</div><div class="step-desc">Enter what your video is about — one sentence is enough.</div></div></div>
-    <div class="step"><div class="step-num">2</div><div><div class="step-title">AI generates everything</div><div class="step-desc">In under 10 seconds, get titles, script, SEO, hashtags, and thumbnail concept.</div></div></div>
-    <div class="step"><div class="step-num">3</div><div><div class="step-title">Copy, save, and publish</div><div class="step-desc">Copy any section with one tap. Then go record your video.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div><div class="step-title">AI generates everything</div><div class="step-desc">In under 10 seconds, get titles, script, SEO, hashtags, and a ready-to-download thumbnail.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div><div class="step-title">Copy, download, and publish</div><div class="step-desc">Copy any section with one tap, download your thumbnail, then go record your video.</div></div></div>
   </div>
 </section>
 
@@ -216,11 +239,11 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       <div class="plan-price">$0</div>
       <div class="plan-period">forever</div>
       <ul class="plan-features">
-        <li><span class="check">✓</span> 3 generations/month</li>
+        <li><span class="check">✓</span> 10 generations/month</li>
         <li><span class="check">✓</span> All content sections</li>
+        <li><span class="check">✓</span> AI thumbnail generator</li>
         <li><span class="check">✓</span> Copy to clipboard</li>
         <li style="color:var(--muted)">✗ No history</li>
-        <li style="color:var(--muted)">✗ No regeneration</li>
       </ul>
       <button class="plan-btn outline" onclick="window.location.href='auth.html'">Get Started Free</button>
     </div>
@@ -230,11 +253,11 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       <div class="plan-price">$9<span>/mo</span></div>
       <div class="plan-period">billed monthly</div>
       <ul class="plan-features">
-        <li><span class="check">✓</span> 20 generations/month</li>
+        <li><span class="check">✓</span> 60 generations/month</li>
         <li><span class="check">✓</span> All content sections</li>
-        <li><span class="check">✓</span> Save to history</li>
+        <li><span class="check">✓</span> AI thumbnail generator</li>
         <li><span class="check">✓</span> Copy all sections</li>
-        <li style="color:var(--muted)">✗ Section regeneration</li>
+        <li><span class="check">✓</span> Email support</li>
       </ul>
       <button class="plan-btn solid" onclick="window.location.href='https://buy.stripe.com/4gM7sLckrctc7Adb9g08g00'">Start Basic →</button>
     </div>
@@ -243,10 +266,10 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       <div class="plan-price">$19<span>/mo</span></div>
       <div class="plan-period">billed monthly</div>
       <ul class="plan-features">
-        <li><span class="check">✓</span> 60 generations/month</li>
+        <li><span class="check">✓</span> 275 generations/month</li>
         <li><span class="check">✓</span> All content sections</li>
-        <li><span class="check">✓</span> Full history</li>
-        <li><span class="check">✓</span> Regenerate by section</li>
+        <li><span class="check">✓</span> AI thumbnail generator</li>
+        <li><span class="check">✓</span> Premium styles</li>
         <li><span class="check">✓</span> Priority AI speed</li>
       </ul>
       <button class="plan-btn outline" onclick="window.location.href='https://buy.stripe.com/8x228r2JR2SCg6Jcdk08g01'">Go Pro →</button>
@@ -256,10 +279,10 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
       <div class="plan-price">$29<span>/mo</span></div>
       <div class="plan-period">billed monthly</div>
       <ul class="plan-features">
-        <li><span class="check">✓</span> Unlimited generations</li>
+        <li><span class="check">✓</span> 450 generations/month</li>
         <li><span class="check">✓</span> Everything in Pro</li>
-        <li><span class="check">✓</span> API access</li>
-        <li><span class="check">✓</span> Bulk mode</li>
+        <li><span class="check">✓</span> Heavy-user volume</li>
+        <li><span class="check">✓</span> All premium styles</li>
         <li><span class="check">✓</span> Priority support</li>
       </ul>
       <button class="plan-btn outline" onclick="window.location.href='https://buy.stripe.com/cNi4gz84bgJs1bPcdk08g02'">Go Creator →</button>
@@ -294,7 +317,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
   <h2>Ready to grow your channel<br>faster than ever?</h2>
   <p>Join thousands of creators who stopped wasting time and started publishing more.</p>
   <button class="btn-primary" style="font-size:18px;padding:18px 40px" onclick="window.location.href='auth.html'">✨ Start for Free Today</button>
-  <p style="margin-top:16px;font-size:12px;color:var(--muted)">No credit card · 3 free generations · Takes 30 seconds to start</p>
+  <p style="margin-top:16px;font-size:12px;color:var(--muted)">No credit card · 10 free generations · Takes 30 seconds to start</p>
 </section>
 
 <!-- TRUST BADGES -->
@@ -357,7 +380,7 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
     <a href="#">Terms</a>
     <a href="#contact">Contact</a>
   </div>
-  <div class="footer-copy">© 2025 Tubervid. Built for YouTube creators worldwide.</div>
+  <div class="footer-copy">© 2026 Tubervid. Built for YouTube creators worldwide.</div>
 </footer>
 
 <!-- AI SUPPORT CHAT -->
@@ -416,6 +439,14 @@ footer{background:var(--s1);border-top:1px solid var(--border);padding:40px 24px
 </div>
 
 <script>
+function toggleMenu(){
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+function goSection(id){
+  document.getElementById('mobileMenu').classList.remove('open');
+  document.getElementById(id).scrollIntoView({behavior:'smooth'});
+}
+
 function sendContact(){
   const name=document.getElementById('cname').value.trim();
   const email=document.getElementById('cemail').value.trim();
@@ -435,7 +466,6 @@ function toggleChat(){
 }
 function askQuestion(q){document.getElementById('chatInput').value=q;sendChat();}
 
-// Real AI-powered chat — calls Netlify function backed by OpenAI
 let chatHistory=[];
 
 async function getBotReply(msg){
