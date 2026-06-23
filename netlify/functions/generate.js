@@ -13,6 +13,7 @@ exports.handler = async function(event, context) {
   }
 
   const { topic, niche, tone, language, token } = JSON.parse(event.body);
+  console.log('REQUEST received. Token present:', !!token, 'Length:', token ? token.length : 0);
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -40,6 +41,11 @@ exports.handler = async function(event, context) {
 
       // Get user from token
       const { data: { user }, error: authError } = await sb.auth.getUser(token);
+
+      if (authError) {
+        console.error('AUTH ERROR:', authError.message);
+      }
+      console.log('TOKEN received, user found:', user ? user.id : 'NONE');
 
       if (!authError && user) {
         userId = user.id;
@@ -244,15 +250,20 @@ Respond with ONLY this JSON structure, nothing else:
 
   // ─── STEP 3: INCREMENT USAGE (only after successful generation) ──────────
   if (sb && userId) {
-    try {
-      await sb
-        .from('usage')
-        .update({ thumbnails_used: currentUsed + 1 })
-        .eq('user_id', userId)
-        .eq('month', userMonth);
-    } catch (e) {
-      console.log('Usage increment error:', e.message);
+    const { data: updateData, error: updateError } = await sb
+      .from('usage')
+      .update({ thumbnails_used: currentUsed + 1 })
+      .eq('user_id', userId)
+      .eq('month', userMonth)
+      .select();
+
+    if (updateError) {
+      console.error('SUPABASE UPDATE ERROR:', updateError.message, updateError.details, updateError.hint);
+    } else {
+      console.log('SUPABASE UPDATE OK:', JSON.stringify(updateData));
     }
+  } else {
+    console.log('SKIPPED USAGE: sb=' + (!!sb) + ' userId=' + userId);
   }
 
   return {
