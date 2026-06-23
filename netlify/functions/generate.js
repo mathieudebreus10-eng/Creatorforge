@@ -201,7 +201,7 @@ Respond with ONLY this JSON structure, nothing else:
   let result = null;
 
   // Try Gemini models first
-  for (const model of ['gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash']) {
+  for (const model of ['gemini-2.5-flash', 'gemini-2.0-flash']) {
     try {
       const text = await tryGemini(model);
       result = parseAndBuild(text);
