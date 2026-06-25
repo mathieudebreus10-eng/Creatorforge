@@ -882,7 +882,8 @@ function addCMsg(text, type){
   const m = document.getElementById('chatMsgs');
   const d = document.createElement('div');
   d.className = `cmsg ${type}`;
-  d.innerHTML = text.replace(/\n/g, '<br>');
+  const clean = text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/`(.*?)`/g, '$1');
+  d.innerHTML = clean.replace(/\n/g, '<br>');
   m.appendChild(d);
   scrollC();
 }
