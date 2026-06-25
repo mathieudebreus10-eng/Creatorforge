@@ -771,18 +771,25 @@ function hideError() {
 
 <!-- AI SUPPORT CHAT -->
 <style>
+/* ─── CORREÇÃO: chat-window maior e mensagens não cortam ─── */
 .chat-bubble{position:fixed;bottom:20px;right:20px;z-index:9999;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9b59fc);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;border:none;box-shadow:0 8px 28px rgba(124,92,252,0.5);animation:pulse-ring 2.5s ease-in-out infinite;}
 @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(124,92,252,0.5)}70%{box-shadow:0 0 0 12px rgba(124,92,252,0)}100%{box-shadow:0 0 0 0 rgba(124,92,252,0)}}
 .chat-notify{position:absolute;top:-3px;right:-3px;width:17px;height:17px;border-radius:50%;background:#f43f5e;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
-.chat-window{position:fixed;bottom:84px;right:16px;z-index:9999;width:300px;max-height:440px;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.7);display:none;flex-direction:column;font-family:'Inter',sans-serif;}
+
+/* FIX 1: max-height aumentado de 440px → 490px */
+.chat-window{position:fixed;bottom:84px;right:16px;z-index:9999;width:300px;max-height:490px;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.7);display:none;flex-direction:column;font-family:'Inter',sans-serif;}
 .chat-window.open{display:flex}
 .chat-header{background:linear-gradient(135deg,var(--accent),#9b59fc);padding:12px 14px;display:flex;align-items:center;gap:10px;}
 .chat-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;}
 .chat-hname{font-size:13px;font-weight:700;color:#fff}
 .chat-hstatus{font-size:10px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:4px}
 .sdot{width:5px;height:5px;border-radius:50%;background:#22c55e}
-.chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:280px}
-.cmsg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:12px;line-height:1.5}
+
+/* FIX 2: max-height aumentado de 280px → 320px e min-height adicionado */
+.chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:320px;min-height:120px;}
+
+/* FIX 3: word-wrap e overflow-wrap adicionados para não cortar texto longo */
+.cmsg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:12px;line-height:1.5;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;}
 .cmsg.bot{background:var(--card);color:#ccc;align-self:flex-start;border-bottom-left-radius:3px}
 .cmsg.user{background:linear-gradient(135deg,var(--accent),#9b59fc);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
 .csugg{padding:0 10px 8px;display:flex;flex-wrap:wrap;gap:5px}
@@ -915,7 +922,7 @@ function extractColorFromPrompt(prompt) {
   for (const [word, hex] of Object.entries(colorMap)) {
     if (lower.includes('text color ' + word) || lower.includes('color ' + word)) return hex;
   }
-  return null; // no color found in prompt
+  return null;
 }
 
 function setIncludeText(val) {
@@ -1024,7 +1031,6 @@ async function generateThumbnail() {
   try {
     const customPrompt = document.getElementById('thumbPrompt').value.trim();
 
-    // Auto-detect color from prompt if user typed it (e.g. "text color gold")
     const promptColor = extractColorFromPrompt(customPrompt);
     if (promptColor) {
       textColor = promptColor;
@@ -1032,9 +1038,6 @@ async function generateThumbnail() {
 
     const token = await getToken();
 
-    // ✅ FIX: Always send includeText: false to Gemini
-    // Text is drawn by Canvas after the image is generated — never by the AI
-    // This prevents duplicate/repeated text in the final thumbnail
     let body = {
       concept: customPrompt || currentThumbConcept.main_image || 'professional YouTube creator',
       text_overlay: text,
@@ -1043,7 +1046,7 @@ async function generateThumbnail() {
       style: style,
       format: thumbFormat,
       customPrompt: customPrompt,
-      includeText: false,  // ← ALWAYS false: Canvas handles text overlay
+      includeText: false,
       token: token
     };
 
@@ -1075,7 +1078,6 @@ async function generateThumbnail() {
       throw new Error('No image received. Please try again.');
     }
 
-    // Draw text on top using Canvas only if user chose "With Text"
     if (includeText && text && text.trim().length > 0) {
       try {
         const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat, textColor);
