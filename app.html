@@ -957,14 +957,56 @@ function extractColorFromPrompt(prompt) {
 // NOVO: detecta o lado pedido no prompt (left/right)
 function extractSideFromPrompt(prompt) {
   const lower = (prompt || '').toLowerCase();
-  // Se o prompt diz que a PESSOA está à direita, texto vai à esquerda (e vice-versa)
-  if (lower.includes('person right') || lower.includes('subject right') || lower.includes('right side') || lower.includes('on the right')) return 'left';
-  if (lower.includes('person left') || lower.includes('subject left') || lower.includes('left side') || lower.includes('on the left')) return 'right';
-  // Se o prompt pede o texto explicitamente num lado
+
+  // PRIORIDADE 1 (MÁXIMA): TAG explícita escrita por você no prompt.
+  // Você manda, o código obedece — sem adivinhação.
+  //   [TEXT:LEFT]   -> texto à esquerda
+  //   [TEXT:RIGHT]  -> texto à direita
+  //   [TEXT:CENTER] -> texto no centro/baixo
+  if (lower.includes('[text:left]'))   return 'left';
+  if (lower.includes('[text:right]'))  return 'right';
+  if (lower.includes('[text:center]')) return 'center';
+
+  // PRIORIDADE 2: onde está o ESPAÇO VAZIO (copy space / negative space).
+  if (lower.includes('copy space on the left') || lower.includes('copy space left') ||
+      lower.includes('negative space on the left') || lower.includes('space on the left') ||
+      lower.includes('left side is empty') || lower.includes('left side empty') ||
+      lower.includes('empty on the left')) return 'left';
+  if (lower.includes('copy space on the right') || lower.includes('copy space right') ||
+      lower.includes('negative space on the right') || lower.includes('space on the right') ||
+      lower.includes('right side is empty') || lower.includes('right side empty') ||
+      lower.includes('empty on the right')) return 'right';
+
+  // PRIORIDADE 3: onde está a PESSOA → texto vai no lado oposto.
+  if (lower.includes('subject positioned on the right') || lower.includes('subject on the right') ||
+      lower.includes('person on the right') || lower.includes('face on the right') ||
+      lower.includes('right third')) return 'left';
+  if (lower.includes('subject positioned on the left') || lower.includes('subject on the left') ||
+      lower.includes('person on the left') || lower.includes('face on the left') ||
+      lower.includes('left third')) return 'right';
+
+  // PRIORIDADE 4: pedido explícito do texto.
   if (lower.includes('text left') || lower.includes('text on left')) return 'left';
   if (lower.includes('text right') || lower.includes('text on right')) return 'right';
   if (lower.includes('text center') || lower.includes('text bottom')) return 'center';
+
   return null;
+}
+
+// Lê APENAS a tag explícita [TEXT:LEFT/RIGHT/CENTER]. Nada mais.
+// Se não houver tag, retorna null e o BOTÃO Text Position decide.
+function extractTagSide(prompt) {
+  const lower = (prompt || '').toLowerCase();
+  if (lower.includes('[text:left]'))   return 'left';
+  if (lower.includes('[text:right]'))  return 'right';
+  if (lower.includes('[text:center]')) return 'center';
+  return null;
+}
+
+// Remove a tag [TEXT:...] do prompt antes de mandar para a Stability,
+// para que ela não apareça na imagem gerada.
+function stripTextTag(prompt) {
+  return (prompt || '').replace(/\[text:(left|right|center)\]/gi, '').trim();
 }
 
 function setIncludeText(val) {
@@ -1071,18 +1113,24 @@ async function generateThumbnail() {
   document.getElementById('thumbGenBtn').disabled = true;
 
   try {
-    const customPrompt = document.getElementById('thumbPrompt').value.trim();
+    const rawPrompt = document.getElementById('thumbPrompt').value.trim();
 
-    const promptColor = extractColorFromPrompt(customPrompt);
+    const promptColor = extractColorFromPrompt(rawPrompt);
     if (promptColor) {
       textColor = promptColor;
     }
 
-    // NOVO: se o prompt indicar lado, ele tem prioridade sobre o botão
-    const promptSide = extractSideFromPrompt(customPrompt);
-    if (promptSide) {
-      textSide = promptSide;
+    // PRIORIDADE DE LADO DO TEXTO:
+    // 1) Tag explícita no prompt ([TEXT:LEFT/RIGHT/CENTER]) — você mandou, obedece.
+    // 2) Senão, o BOTÃO "Text Position" que você clicou manda (textSide já está setado).
+    // O texto do prompt (copy space, etc.) NÃO sobrescreve mais o botão.
+    const taggedSide = extractTagSide(rawPrompt);
+    if (taggedSide) {
+      textSide = taggedSide;
     }
+
+    // Remove a tag [TEXT:...] antes de enviar à Stability (para não virar imagem).
+    const customPrompt = stripTextTag(rawPrompt);
 
     const token = await getToken();
 
