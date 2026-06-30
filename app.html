@@ -523,6 +523,18 @@
         <button onclick="setIncludeText(true)" id="textOn" style="background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--light);font-size:12px;font-weight:700;padding:10px;cursor:pointer">🔤 With Text<br><span style="font-size:10px;font-weight:400;opacity:0.8">Baked into image</span></button>
       </div>
       <input id="thumbText" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:Inter,sans-serif;font-size:14px;padding:12px;outline:none" placeholder="Ex: CHANGED MY LIFE">
+
+      <!-- NOVO: seletor de LADO do texto -->
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text Position</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px" id="sidePicker">
+          <button onclick="setTextSide('left',this)" id="sideLeft" style="background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--light);font-size:12px;font-weight:700;padding:10px;cursor:pointer">⬅️ Left<br><span style="font-size:9px;font-weight:400;opacity:0.7">Person right</span></button>
+          <button onclick="setTextSide('center',this)" id="sideCenter" style="background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--light);font-size:12px;font-weight:700;padding:10px;cursor:pointer">⬛ Center<br><span style="font-size:9px;font-weight:400;opacity:0.7">Bottom</span></button>
+          <button onclick="setTextSide('right',this)" id="sideRight" style="background:linear-gradient(135deg,var(--accent),#9b59fc);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:10px;cursor:pointer">➡️ Right<br><span style="font-size:9px;font-weight:400;opacity:0.8">Person left</span></button>
+        </div>
+        <div style="font-size:10px;color:#555;margin-top:6px">💡 Choose the EMPTY side — the opposite side of where the person is</div>
+      </div>
+
       <div style="margin-top:10px">
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Text Color</div>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px" id="colorPicker">
@@ -898,6 +910,22 @@ let thumbFormat = 'horizontal';
 let includeText = false;
 let currentThumbConcept = {};
 let textColor = '#FFD700';
+let textSide = 'right'; // NOVO: lado onde o texto vai (lado vazio). Padrão: right.
+
+function setTextSide(side, btn) {
+  textSide = side;
+  ['sideLeft','sideCenter','sideRight'].forEach(id => {
+    const b = document.getElementById(id);
+    b.style.background = 'var(--card)';
+    b.style.border = '1px solid var(--border)';
+    b.style.color = 'var(--light)';
+  });
+  if (btn) {
+    btn.style.background = 'linear-gradient(135deg,var(--accent),#9b59fc)';
+    btn.style.border = 'none';
+    btn.style.color = '#fff';
+  }
+}
 
 function setTextColor(color, btn) {
   textColor = color;
@@ -923,6 +951,19 @@ function extractColorFromPrompt(prompt) {
   for (const [word, hex] of Object.entries(colorMap)) {
     if (lower.includes('text color ' + word) || lower.includes('color ' + word)) return hex;
   }
+  return null;
+}
+
+// NOVO: detecta o lado pedido no prompt (left/right)
+function extractSideFromPrompt(prompt) {
+  const lower = (prompt || '').toLowerCase();
+  // Se o prompt diz que a PESSOA está à direita, texto vai à esquerda (e vice-versa)
+  if (lower.includes('person right') || lower.includes('subject right') || lower.includes('right side') || lower.includes('on the right')) return 'left';
+  if (lower.includes('person left') || lower.includes('subject left') || lower.includes('left side') || lower.includes('on the left')) return 'right';
+  // Se o prompt pede o texto explicitamente num lado
+  if (lower.includes('text left') || lower.includes('text on left')) return 'left';
+  if (lower.includes('text right') || lower.includes('text on right')) return 'right';
+  if (lower.includes('text center') || lower.includes('text bottom')) return 'center';
   return null;
 }
 
@@ -1037,6 +1078,12 @@ async function generateThumbnail() {
       textColor = promptColor;
     }
 
+    // NOVO: se o prompt indicar lado, ele tem prioridade sobre o botão
+    const promptSide = extractSideFromPrompt(customPrompt);
+    if (promptSide) {
+      textSide = promptSide;
+    }
+
     const token = await getToken();
 
     let body = {
@@ -1081,7 +1128,7 @@ async function generateThumbnail() {
 
     if (includeText && text && text.trim().length > 0) {
       try {
-        const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat, textColor);
+        const finalImage = await drawTextOnImage(data.imageUrl, text, thumbFormat, textColor, textSide);
         document.getElementById('thumbImage').src = finalImage;
       } catch (canvasErr) {
         console.error('Canvas error:', canvasErr);
@@ -1101,7 +1148,14 @@ async function generateThumbnail() {
   }
 }
 
-function drawTextOnImage(imageUrl, text, format, color = '#FFD700') {
+/* ============================================================
+   FUNÇÃO ATUALIZADA: texto no LADO VAZIO (esquerda/direita) ou centro.
+   - side = 'left'  → texto na metade esquerda
+   - side = 'right' → texto na metade direita
+   - side = 'center'→ texto no centro/baixo (comportamento antigo)
+   Contorno limpo + sombra suave. Fonte grande, quebra em linhas.
+   ============================================================ */
+function drawTextOnImage(imageUrl, text, format, color = '#FFD700', side = 'right') {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -1111,46 +1165,71 @@ function drawTextOnImage(imageUrl, text, format, color = '#FFD700') {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
 
-      const fontSize = format === 'square' ? img.width * 0.09 : img.width * 0.085;
-      const padding = img.width * 0.04;
+      const W = img.width;
+      const H = img.height;
 
-      ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
+      // Fonte e largura disponível dependem do lado.
+      // Nos lados (left/right) o texto fica numa coluna ~45% da largura.
+      let fontSize, maxWidth, centerX;
+
+      if (side === 'center') {
+        fontSize = format === 'square' ? W * 0.09 : W * 0.085;
+        maxWidth = W * 0.85;
+        centerX = W / 2;
+      } else {
+        // lado esquerdo ou direito
+        fontSize = format === 'vertical' ? W * 0.11 : W * 0.095;
+        maxWidth = W * 0.44;                       // coluna de ~45% da largura
+        centerX = side === 'left' ? W * 0.27 : W * 0.73;
+      }
+
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      const maxWidth = img.width * 0.85;
-      const words = text.toUpperCase().split(' ');
-      let lines = [];
-      let currentLine = words[0] || '';
-
-      for (let i = 1; i < words.length; i++) {
-        const testLine = currentLine + ' ' + words[i];
-        if (ctx.measureText(testLine).width > maxWidth) {
-          lines.push(currentLine);
-          currentLine = words[i];
-        } else {
-          currentLine = testLine;
-        }
+      // Quebra o texto em linhas que cabem em maxWidth.
+      // Se ficar com muitas linhas, reduz a fonte um pouco.
+      let lines = wrapLines(ctx, text.toUpperCase(), maxWidth, fontSize);
+      while (lines.length > 4 && fontSize > H * 0.07) {
+        fontSize -= W * 0.005;
+        lines = wrapLines(ctx, text.toUpperCase(), maxWidth, fontSize);
       }
-      lines.push(currentLine);
 
-      const lineHeight = fontSize * 1.15;
+      const lineHeight = fontSize * 1.12;
       const totalTextHeight = lines.length * lineHeight;
-      const startY = format === 'vertical' 
-        ? img.height * 0.78 - (totalTextHeight / 2)
-        : img.height - totalTextHeight - padding;
+
+      // Posição vertical: centralizado na vertical para os lados;
+      // mais para baixo no modo center (como antes).
+      let startY;
+      if (side === 'center') {
+        const padding = W * 0.04;
+        startY = format === 'vertical'
+          ? H * 0.78 - (totalTextHeight / 2)
+          : H - totalTextHeight - padding;
+      } else {
+        startY = (H - totalTextHeight) / 2;
+      }
+
+      ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
 
       lines.forEach((line, i) => {
         const y = startY + (i * lineHeight) + (lineHeight / 2);
-        const x = img.width / 2;
 
-        ctx.lineWidth = fontSize * 0.12;
+        // Contorno preto limpo (stroke antes do fill)
+        ctx.lineWidth = fontSize * 0.13;
         ctx.strokeStyle = '#000000';
         ctx.lineJoin = 'round';
-        ctx.strokeText(line, x, y);
+        ctx.miterLimit = 2;
+        ctx.strokeText(line, centerX, y);
 
+        // Sombra suave só no preenchimento, para dar contraste
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.55)';
+        ctx.shadowBlur = fontSize * 0.06;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 3;
         ctx.fillStyle = color;
-        ctx.fillText(line, x, y);
+        ctx.fillText(line, centerX, y);
+        ctx.restore();
       });
 
       resolve(canvas.toDataURL('image/png'));
@@ -1158,6 +1237,25 @@ function drawTextOnImage(imageUrl, text, format, color = '#FFD700') {
     img.onerror = () => reject(new Error('Failed to load image for text overlay'));
     img.src = imageUrl;
   });
+}
+
+// Auxiliar: quebra texto em linhas que cabem em maxWidth
+function wrapLines(ctx, text, maxWidth, fontSize) {
+  ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0] || '';
+  for (let i = 1; i < words.length; i++) {
+    const testLine = currentLine + ' ' + words[i];
+    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = words[i];
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
 }
 
 function fileToBase64(file) {
