@@ -381,7 +381,7 @@
 </header>
 
 <div class="hero">
-  <h1>Turn any topic into a<br><span>full YouTube package</span></h1>
+  <h1>Turn any topic into a<br><span>full content package</span></h1>
   <p>Titles · Script · SEO · Hashtags · Thumbnail</p>
 </div>
 
@@ -389,6 +389,19 @@
   <div class="input-card">
     <div class="input-label">Your video topic</div>
     <textarea id="topicInput" placeholder="Ex: 10 habits that changed my life, Como começar a investir, Best guitar tips for beginners..."></textarea>
+
+    <div class="selects-row">
+      <select id="platformSelect">
+        <option value="YouTube">▶️ YouTube</option>
+        <option value="TikTok">🎵 TikTok</option>
+        <option value="Instagram">📸 Instagram</option>
+        <option value="Other">🌐 Other</option>
+      </select>
+      <select id="formatSelect">
+        <option value="Long-form">🎬 Long-form</option>
+        <option value="Short-form">⚡ Short-form</option>
+      </select>
+    </div>
 
     <div class="selects-row">
       <select id="nicheSelect">
@@ -612,6 +625,8 @@ async function getToken() {
 
 async function generate() {
   const topic = document.getElementById('topicInput').value.trim();
+  const platform = document.getElementById('platformSelect').value;
+  const format = document.getElementById('formatSelect').value;
   const niche = document.getElementById('nicheSelect').value;
   const tone = document.getElementById('toneSelect').value;
   const language = document.getElementById('languageSelect').value;
@@ -628,7 +643,7 @@ async function generate() {
     const response = await fetch('/.netlify/functions/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, niche, tone, language, token })
+      body: JSON.stringify({ topic, platform, format, niche, tone, language, token })
     });
 
     const data = await response.json();
